@@ -15,7 +15,7 @@ import java.util.Optional;
 
 /**
  * Repository interface for Maintenance entity
- * Provides CRUD operations and custom queries for maintenance management
+ * Provides data access operations for maintenance management
  * 
  * @author STMS Development Team
  * @version 1.0.0
@@ -23,365 +23,138 @@ import java.util.Optional;
 @Repository
 public interface MaintenanceRepository extends JpaRepository<Maintenance, Long> {
 
-    // ===============================================
-    // BASIC FINDER METHODS
-    // ===============================================
-    
-    /**
-     * Find maintenance by maintenance number
-     */
+    // Basic queries
     Optional<Maintenance> findByMaintenanceNumber(String maintenanceNumber);
+    Page<Maintenance> findByTruckId(Long truckId, Pageable pageable);
+    Page<Maintenance> findByMaintenanceType(String maintenanceType, Pageable pageable);
+    Page<Maintenance> findByServiceCategory(String serviceCategory, Pageable pageable);
+    Page<Maintenance> findByStatus(String status, Pageable pageable);
+    Page<Maintenance> findByPriority(String priority, Pageable pageable);
+    Page<Maintenance> findByIsRecurring(Boolean isRecurring, Pageable pageable);
     
-    /**
-     * Find maintenance records by truck
-     */
-    List<Maintenance> findByTruckId(Long truckId);
-    
-    /**
-     * Find maintenance records by shop
-     */
-    List<Maintenance> findByShopId(Long shopId);
-    
-    /**
-     * Find maintenance records by type
-     */
-    List<Maintenance> findByMaintenanceType(Maintenance.MaintenanceType maintenanceType);
-    
-    /**
-     * Find maintenance records by date range
-     */
-    List<Maintenance> findByMaintenanceDateBetween(LocalDate startDate, LocalDate endDate);
-    
-    /**
-     * Find maintenance records ordered by date
-     */
-    List<Maintenance> findAllByOrderByMaintenanceDateDesc();
-
-    // ===============================================
-    // MAINTENANCE TYPE QUERIES
-    // ===============================================
-    
-    /**
-     * Find service records
-     */
-    @Query("SELECT m FROM Maintenance m WHERE m.maintenanceType = 'SERVICE' ORDER BY m.maintenanceDate DESC")
-    List<Maintenance> findServiceRecords();
-    
-    /**
-     * Find repair records
-     */
-    @Query("SELECT m FROM Maintenance m WHERE m.maintenanceType = 'REPAIR' ORDER BY m.maintenanceDate DESC")
-    List<Maintenance> findRepairRecords();
-    
-    /**
-     * Find tyre change records
-     */
-    @Query("SELECT m FROM Maintenance m WHERE m.maintenanceType = 'TYRE_CHANGE' ORDER BY m.maintenanceDate DESC")
-    List<Maintenance> findTyreChangeRecords();
-    
-    /**
-     * Find oil change records
-     */
-    @Query("SELECT m FROM Maintenance m WHERE m.maintenanceType = 'OIL_CHANGE' ORDER BY m.maintenanceDate DESC")
-    List<Maintenance> findOilChangeRecords();
-    
-    /**
-     * Get maintenance type distribution
-     */
-    @Query("SELECT m.maintenanceType, COUNT(m), COALESCE(SUM(m.totalCost), 0) " +
-           "FROM Maintenance m " +
-           "WHERE m.maintenanceDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY m.maintenanceType " +
-           "ORDER BY SUM(m.totalCost) DESC")
-    List<Object[]> getMaintenanceTypeDistribution(@Param("startDate") LocalDate startDate,
-                                                 @Param("endDate") LocalDate endDate);
-
-    // ===============================================
-    // TRUCK-WISE ANALYSIS
-    // ===============================================
-    
-    /**
-     * Get truck-wise maintenance summary
-     */
-    @Query("SELECT m.truck, COUNT(m), COALESCE(SUM(m.totalCost), 0), COALESCE(AVG(m.totalCost), 0) " +
-           "FROM Maintenance m " +
-           "WHERE m.maintenanceDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY m.truck " +
-           "ORDER BY SUM(m.totalCost) DESC")
-    List<Object[]> getTruckWiseMaintenanceSummary(@Param("startDate") LocalDate startDate,
-                                                 @Param("endDate") LocalDate endDate);
-    
-    /**
-     * Find trucks with highest maintenance costs
-     */
-    @Query("SELECT m.truck, COALESCE(SUM(m.totalCost), 0) as totalCost " +
-           "FROM Maintenance m " +
-           "WHERE m.maintenanceDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY m.truck " +
-           "ORDER BY totalCost DESC")
-    Page<Object[]> findTrucksWithHighestMaintenanceCosts(@Param("startDate") LocalDate startDate,
-                                                        @Param("endDate") LocalDate endDate,
-                                                        Pageable pageable);
-    
-    /**
-     * Get truck maintenance frequency
-     */
-    @Query("SELECT m.truck, COUNT(m) as maintenanceCount " +
-           "FROM Maintenance m " +
-           "WHERE m.maintenanceDate >= :startDate " +
-           "GROUP BY m.truck " +
-           "ORDER BY maintenanceCount DESC")
-    List<Object[]> getTruckMaintenanceFrequency(@Param("startDate") LocalDate startDate);
-    
-    /**
-     * Find trucks requiring maintenance (based on mileage)
-     */
-    @Query("SELECT DISTINCT m.truck FROM Maintenance m " +
-           "WHERE m.nextServiceMileage IS NOT NULL AND " +
-           "m.truck.currentMileage >= m.nextServiceMileage")
-    List<Object[]> findTrucksRequiringMaintenanceByMileage();
-
-    // ===============================================
-    // WARRANTY MANAGEMENT
-    // ===============================================
-    
-    /**
-     * Find maintenance records with active warranty
-     */
-    @Query("SELECT m FROM Maintenance m WHERE m.warrantyExpiryDate > CURRENT_DATE ORDER BY m.warrantyExpiryDate ASC")
-    List<Maintenance> findMaintenanceWithActiveWarranty();
-    
-    /**
-     * Find maintenance records with expired warranty
-     */
-    @Query("SELECT m FROM Maintenance m WHERE m.warrantyExpiryDate < CURRENT_DATE ORDER BY m.warrantyExpiryDate DESC")
-    List<Maintenance> findMaintenanceWithExpiredWarranty();
-    
-    /**
-     * Find maintenance records with warranty expiring soon
-     */
-    @Query("SELECT m FROM Maintenance m WHERE m.warrantyExpiryDate BETWEEN CURRENT_DATE AND CURRENT_DATE + :days ORDER BY m.warrantyExpiryDate ASC")
-    List<Maintenance> findMaintenanceWithWarrantyExpiringSoon(@Param("days") int days);
-    
-    /**
-     * Get warranty summary
-     */
-    @Query("SELECT " +
-           "COUNT(CASE WHEN m.warrantyExpiryDate > CURRENT_DATE THEN 1 END) as activeWarranties, " +
-           "COUNT(CASE WHEN m.warrantyExpiryDate < CURRENT_DATE THEN 1 END) as expiredWarranties, " +
-           "COUNT(CASE WHEN m.warrantyExpiryDate BETWEEN CURRENT_DATE AND CURRENT_DATE + 30 THEN 1 END) as expiringSoon " +
-           "FROM Maintenance m " +
-           "WHERE m.warrantyExpiryDate IS NOT NULL")
-    Object[] getWarrantySummary();
-
-    // ===============================================
-    // SERVICE SCHEDULING
-    // ===============================================
-    
-    /**
-     * Find maintenance records with next service due
-     */
-    @Query("SELECT m FROM Maintenance m WHERE m.nextServiceDate <= CURRENT_DATE ORDER BY m.nextServiceDate ASC")
-    List<Maintenance> findMaintenanceWithServiceDue();
-    
-    /**
-     * Find maintenance records with service due soon
-     */
-    @Query("SELECT m FROM Maintenance m WHERE m.nextServiceDate BETWEEN CURRENT_DATE AND CURRENT_DATE + :days ORDER BY m.nextServiceDate ASC")
-    List<Maintenance> findMaintenanceWithServiceDueSoon(@Param("days") int days);
-    
-    /**
-     * Get service schedule summary
-     */
-    @Query("SELECT " +
-           "COUNT(CASE WHEN m.nextServiceDate <= CURRENT_DATE THEN 1 END) as serviceDue, " +
-           "COUNT(CASE WHEN m.nextServiceDate BETWEEN CURRENT_DATE + 1 AND CURRENT_DATE + 7 THEN 1 END) as dueThisWeek, " +
-           "COUNT(CASE WHEN m.nextServiceDate BETWEEN CURRENT_DATE + 8 AND CURRENT_DATE + 30 THEN 1 END) as dueThisMonth " +
-           "FROM Maintenance m " +
-           "WHERE m.nextServiceDate IS NOT NULL")
-    Object[] getServiceScheduleSummary();
-
-    // ===============================================
-    // COST ANALYSIS
-    // ===============================================
-    
-    /**
-     * Find high cost maintenance records
-     */
-    @Query("SELECT m FROM Maintenance m WHERE m.totalCost > :threshold ORDER BY m.totalCost DESC")
-    List<Maintenance> findHighCostMaintenance(@Param("threshold") BigDecimal threshold);
-    
-    /**
-     * Calculate total maintenance cost for period
-     */
-    @Query("SELECT COALESCE(SUM(m.totalCost), 0) FROM Maintenance m WHERE m.maintenanceDate BETWEEN :startDate AND :endDate")
-    BigDecimal calculateTotalMaintenanceCostForPeriod(@Param("startDate") LocalDate startDate,
-                                                     @Param("endDate") LocalDate endDate);
-    
-    /**
-     * Get cost breakdown analysis
-     */
-    @Query("SELECT " +
-           "COALESCE(SUM(m.totalCost), 0) as totalCost, " +
-           "COALESCE(SUM(m.labourCost), 0) as totalLabourCost, " +
-           "COALESCE(SUM(m.partsCost), 0) as totalPartsCost, " +
-           "COALESCE(AVG(m.totalCost), 0) as averageCost " +
-           "FROM Maintenance m " +
-           "WHERE m.maintenanceDate BETWEEN :startDate AND :endDate")
-    Object[] getCostBreakdownAnalysis(@Param("startDate") LocalDate startDate,
-                                     @Param("endDate") LocalDate endDate);
-    
-    /**
-     * Get maintenance cost trend
-     */
-    @Query("SELECT " +
-           "EXTRACT(YEAR FROM m.maintenanceDate) as year, " +
-           "EXTRACT(MONTH FROM m.maintenanceDate) as month, " +
-           "COUNT(m) as maintenanceCount, " +
-           "COALESCE(SUM(m.totalCost), 0) as totalCost " +
-           "FROM Maintenance m " +
-           "WHERE m.maintenanceDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY EXTRACT(YEAR FROM m.maintenanceDate), EXTRACT(MONTH FROM m.maintenanceDate) " +
-           "ORDER BY year DESC, month DESC")
-    List<Object[]> getMaintenanceCostTrend(@Param("startDate") LocalDate startDate,
-                                          @Param("endDate") LocalDate endDate);
-
-    // ===============================================
-    // SHOP-WISE ANALYSIS
-    // ===============================================
-    
-    /**
-     * Get shop-wise maintenance summary
-     */
-    @Query("SELECT m.shop, COUNT(m), COALESCE(SUM(m.totalCost), 0) " +
-           "FROM Maintenance m " +
-           "WHERE m.shop IS NOT NULL AND m.maintenanceDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY m.shop " +
-           "ORDER BY SUM(m.totalCost) DESC")
-    List<Object[]> getShopWiseMaintenanceSummary(@Param("startDate") LocalDate startDate,
-                                                @Param("endDate") LocalDate endDate);
-    
-    /**
-     * Find preferred maintenance shops
-     */
-    @Query("SELECT m.shop, COUNT(m) as maintenanceCount, COALESCE(SUM(m.totalCost), 0) as totalCost " +
-           "FROM Maintenance m " +
-           "WHERE m.shop IS NOT NULL " +
-           "GROUP BY m.shop " +
-           "ORDER BY maintenanceCount DESC, totalCost DESC")
-    List<Object[]> findPreferredMaintenanceShops();
-
-    // ===============================================
-    // SEARCH AND FILTER QUERIES
-    // ===============================================
-    
-    /**
-     * Search maintenance records by multiple criteria
-     */
+    // Search queries
     @Query("SELECT m FROM Maintenance m WHERE " +
-           "(:maintenanceNumber IS NULL OR m.maintenanceNumber = :maintenanceNumber) AND " +
+           "(:maintenanceNumber IS NULL OR m.maintenanceNumber LIKE %:maintenanceNumber%) AND " +
            "(:truckId IS NULL OR m.truck.id = :truckId) AND " +
-           "(:shopId IS NULL OR m.shop.id = :shopId) AND " +
            "(:maintenanceType IS NULL OR m.maintenanceType = :maintenanceType) AND " +
-           "(:startDate IS NULL OR m.maintenanceDate >= :startDate) AND " +
-           "(:endDate IS NULL OR m.maintenanceDate <= :endDate) AND " +
-           "(:minCost IS NULL OR m.totalCost >= :minCost) AND " +
-           "(:maxCost IS NULL OR m.totalCost <= :maxCost)")
-    Page<Maintenance> searchMaintenance(@Param("maintenanceNumber") String maintenanceNumber,
-                                       @Param("truckId") Long truckId,
-                                       @Param("shopId") Long shopId,
-                                       @Param("maintenanceType") Maintenance.MaintenanceType maintenanceType,
-                                       @Param("startDate") LocalDate startDate,
-                                       @Param("endDate") LocalDate endDate,
-                                       @Param("minCost") BigDecimal minCost,
-                                       @Param("maxCost") BigDecimal maxCost,
-                                       Pageable pageable);
+           "(:serviceCategory IS NULL OR m.serviceCategory = :serviceCategory) AND " +
+           "(:status IS NULL OR m.status = :status) AND " +
+           "(:priority IS NULL OR m.priority = :priority) AND " +
+           "(:startDate IS NULL OR m.scheduledDate >= :startDate) AND " +
+           "(:endDate IS NULL OR m.scheduledDate <= :endDate)")
+    Page<Maintenance> searchMaintenances(@Param("maintenanceNumber") String maintenanceNumber,
+                                        @Param("truckId") Long truckId,
+                                        @Param("maintenanceType") String maintenanceType,
+                                        @Param("serviceCategory") String serviceCategory,
+                                        @Param("status") String status,
+                                        @Param("priority") String priority,
+                                        @Param("startDate") LocalDate startDate,
+                                        @Param("endDate") LocalDate endDate,
+                                        Pageable pageable);
     
-    /**
-     * Find maintenance by cost range
-     */
-    List<Maintenance> findByTotalCostBetween(BigDecimal minCost, BigDecimal maxCost);
+    // Scheduling queries
+    @Query("SELECT m FROM Maintenance m WHERE m.scheduledDate BETWEEN :fromDate AND :toDate AND m.status = 'SCHEDULED'")
+    Page<Maintenance> findScheduledMaintenances(@Param("fromDate") LocalDate fromDate,
+                                               @Param("toDate") LocalDate toDate,
+                                               Pageable pageable);
     
-    /**
-     * Find maintenance by description containing
-     */
-    List<Maintenance> findByDescriptionContainingIgnoreCase(String description);
-
-    // ===============================================
-    // REPORTING QUERIES
-    // ===============================================
+    @Query("SELECT m FROM Maintenance m WHERE m.status = 'OVERDUE'")
+    Page<Maintenance> findOverdueMaintenances(Pageable pageable);
     
-    /**
-     * Get monthly maintenance summary
-     */
-    @Query("SELECT " +
-           "EXTRACT(YEAR FROM m.maintenanceDate) as year, " +
-           "EXTRACT(MONTH FROM m.maintenanceDate) as month, " +
-           "COUNT(m) as maintenanceCount, " +
-           "COALESCE(SUM(m.totalCost), 0) as totalCost, " +
-           "COALESCE(AVG(m.totalCost), 0) as averageCost " +
-           "FROM Maintenance m " +
-           "WHERE m.maintenanceDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY EXTRACT(YEAR FROM m.maintenanceDate), EXTRACT(MONTH FROM m.maintenanceDate) " +
-           "ORDER BY year DESC, month DESC")
+    @Query("SELECT m FROM Maintenance m WHERE m.scheduledDate <= :date AND m.status = 'SCHEDULED'")
+    Page<Maintenance> findUpcomingMaintenances(@Param("date") LocalDate date, Pageable pageable);
+    
+    @Query("SELECT m FROM Maintenance m WHERE m.scheduledDate BETWEEN CURRENT_DATE AND :alertDate AND m.status = 'SCHEDULED'")
+    List<Maintenance> findMaintenancesDueForAlert(@Param("alertDate") LocalDate alertDate);
+    
+    // Recurring maintenance queries
+    @Query("SELECT m FROM Maintenance m WHERE m.isRecurring = true AND m.nextServiceDate <= :date")
+    List<Maintenance> findRecurringMaintenancesDue(@Param("date") LocalDate date);
+    
+    // Cost queries
+    @Query("SELECT SUM(m.laborCost + m.partsCost + m.otherCharges + m.gstAmount) FROM Maintenance m WHERE " +
+           "m.truck.id = :truckId AND m.completedDate BETWEEN :startDate AND :endDate")
+    BigDecimal calculateTotalMaintenanceCost(@Param("truckId") Long truckId,
+                                            @Param("startDate") LocalDate startDate,
+                                            @Param("endDate") LocalDate endDate);
+    
+    @Query("SELECT m.status, COUNT(m), SUM(m.laborCost + m.partsCost + m.otherCharges + m.gstAmount) " +
+           "FROM Maintenance m WHERE m.scheduledDate BETWEEN :startDate AND :endDate " +
+           "GROUP BY m.status")
+    List<Object[]> getMaintenanceCostSummary(@Param("startDate") LocalDate startDate,
+                                            @Param("endDate") LocalDate endDate);
+    
+    @Query("SELECT t.truckNumber, COUNT(m), SUM(m.laborCost + m.partsCost + m.otherCharges + m.gstAmount) " +
+           "FROM Maintenance m JOIN m.truck t WHERE m.completedDate BETWEEN :startDate AND :endDate " +
+           "GROUP BY t.id, t.truckNumber")
+    List<Object[]> getTruckWiseMaintenanceCost(@Param("startDate") LocalDate startDate,
+                                              @Param("endDate") LocalDate endDate);
+    
+    // Reporting queries
+    @Query("SELECT m.maintenanceType, COUNT(m), SUM(m.laborCost + m.partsCost + m.otherCharges + m.gstAmount) " +
+           "FROM Maintenance m WHERE m.scheduledDate BETWEEN :startDate AND :endDate " +
+           "GROUP BY m.maintenanceType")
+    List<Object[]> getMaintenanceByTypeReport(@Param("startDate") LocalDate startDate,
+                                             @Param("endDate") LocalDate endDate);
+    
+    @Query("SELECT m.serviceCategory, COUNT(m), SUM(m.laborCost + m.partsCost + m.otherCharges + m.gstAmount) " +
+           "FROM Maintenance m WHERE m.scheduledDate BETWEEN :startDate AND :endDate " +
+           "GROUP BY m.serviceCategory")
+    List<Object[]> getMaintenanceByCategoryReport(@Param("startDate") LocalDate startDate,
+                                                 @Param("endDate") LocalDate endDate);
+    
+    @Query("SELECT MONTH(m.scheduledDate), YEAR(m.scheduledDate), COUNT(m), SUM(m.laborCost + m.partsCost + m.otherCharges + m.gstAmount) " +
+           "FROM Maintenance m WHERE m.scheduledDate BETWEEN :startDate AND :endDate " +
+           "GROUP BY YEAR(m.scheduledDate), MONTH(m.scheduledDate) " +
+           "ORDER BY YEAR(m.scheduledDate), MONTH(m.scheduledDate)")
     List<Object[]> getMonthlyMaintenanceSummary(@Param("startDate") LocalDate startDate,
                                                @Param("endDate") LocalDate endDate);
     
-    /**
-     * Get maintenance statistics
-     */
-    @Query("SELECT " +
-           "COUNT(m) as totalMaintenance, " +
-           "COALESCE(SUM(m.totalCost), 0) as totalCost, " +
-           "COALESCE(AVG(m.totalCost), 0) as averageCost, " +
-           "COUNT(CASE WHEN m.maintenanceType = 'SERVICE' THEN 1 END) as serviceCount, " +
-           "COUNT(CASE WHEN m.maintenanceType = 'REPAIR' THEN 1 END) as repairCount, " +
-           "COUNT(CASE WHEN m.warrantyExpiryDate > CURRENT_DATE THEN 1 END) as activeWarranties " +
+    @Query("SELECT m.maintenanceNumber, m.maintenanceType, m.serviceCategory, m.scheduledDate, " +
+           "m.completedDate, m.laborCost + m.partsCost + m.otherCharges + m.gstAmount " +
+           "FROM Maintenance m WHERE m.truck.id = :truckId ORDER BY m.scheduledDate DESC")
+    List<Object[]> getTruckMaintenanceHistory(@Param("truckId") Long truckId);
+    
+    @Query("SELECT m.serviceProvider, COUNT(m), AVG(m.laborCost + m.partsCost + m.otherCharges + m.gstAmount), " +
+           "AVG(DATEDIFF(m.completedDate, m.scheduledDate)) " +
+           "FROM Maintenance m WHERE m.serviceProvider IS NOT NULL AND m.completedDate BETWEEN :startDate AND :endDate " +
+           "GROUP BY m.serviceProvider")
+    List<Object[]> getServiceProviderPerformance(@Param("startDate") LocalDate startDate,
+                                                 @Param("endDate") LocalDate endDate);
+    
+    @Query("SELECT m FROM Maintenance m WHERE " +
+           "(:startDate IS NULL OR m.scheduledDate >= :startDate) AND " +
+           "(:endDate IS NULL OR m.scheduledDate <= :endDate) AND " +
+           "(:maintenanceType IS NULL OR m.maintenanceType = :maintenanceType) AND " +
+           "(:status IS NULL OR m.status = :status)")
+    List<Maintenance> findMaintenancesForReport(@Param("startDate") LocalDate startDate,
+                                               @Param("endDate") LocalDate endDate,
+                                               @Param("maintenanceType") String maintenanceType,
+                                               @Param("status") String status);
+    
+    @Query("SELECT COUNT(m), " +
+           "AVG(DATEDIFF(m.completedDate, m.scheduledDate)), " +
+           "COUNT(CASE WHEN m.completedDate <= m.scheduledDate THEN 1 END), " +
+           "COUNT(CASE WHEN m.completedDate > m.scheduledDate THEN 1 END) " +
+           "FROM Maintenance m WHERE m.completedDate BETWEEN :startDate AND :endDate")
+    List<Object[]> getMaintenanceEfficiencyReport(@Param("startDate") LocalDate startDate,
+                                                  @Param("endDate") LocalDate endDate);
+    
+    // Statistics queries
+    @Query("SELECT COUNT(m), " +
+           "COUNT(CASE WHEN m.status = 'SCHEDULED' THEN 1 END), " +
+           "COUNT(CASE WHEN m.status = 'IN_PROGRESS' THEN 1 END), " +
+           "COUNT(CASE WHEN m.status = 'COMPLETED' THEN 1 END), " +
+           "COUNT(CASE WHEN m.status = 'OVERDUE' THEN 1 END), " +
+           "SUM(m.laborCost + m.partsCost + m.otherCharges + m.gstAmount) " +
            "FROM Maintenance m")
     Object[] getMaintenanceStatistics();
     
-    /**
-     * Get maintenance performance by truck
-     */
-    @Query("SELECT m.truck, " +
-           "COUNT(m) as maintenanceCount, " +
-           "COALESCE(SUM(m.totalCost), 0) as totalCost, " +
-           "COALESCE(AVG(m.totalCost), 0) as avgCost, " +
-           "MAX(m.maintenanceDate) as lastMaintenanceDate " +
-           "FROM Maintenance m " +
-           "GROUP BY m.truck " +
-           "ORDER BY totalCost DESC")
-    List<Object[]> getMaintenancePerformanceByTruck();
-
-    // ===============================================
-    // VALIDATION QUERIES
-    // ===============================================
-    
-    /**
-     * Check if maintenance number exists for different maintenance
-     */
+    // Utility queries
     boolean existsByMaintenanceNumberAndIdNot(String maintenanceNumber, Long id);
+    long countByMaintenanceTypeAndStatus(String maintenanceType, String status);
     
-    /**
-     * Count maintenance records by type
-     */
-    long countByMaintenanceType(Maintenance.MaintenanceType maintenanceType);
-    
-    /**
-     * Count maintenance records for truck
-     */
-    long countByTruckId(Long truckId);
-    
-    /**
-     * Count maintenance records with active warranty
-     */
-    @Query("SELECT COUNT(m) FROM Maintenance m WHERE m.warrantyExpiryDate > CURRENT_DATE")
-    long countMaintenanceWithActiveWarranty();
-    
-    /**
-     * Count maintenance records with service due
-     */
-    @Query("SELECT COUNT(m) FROM Maintenance m WHERE m.nextServiceDate <= CURRENT_DATE")
-    long countMaintenanceWithServiceDue();
+    @Query("SELECT m.maintenanceNumber FROM Maintenance m WHERE m.maintenanceNumber LIKE :pattern ORDER BY m.maintenanceNumber DESC")
+    String findLastMaintenanceNumberForDate(@Param("pattern") String pattern);
 }
 

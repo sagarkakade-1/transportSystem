@@ -15,7 +15,7 @@ import java.util.Optional;
 
 /**
  * Repository interface for Expense entity
- * Provides CRUD operations and custom queries for expense management
+ * Provides data access operations for expense management
  * 
  * @author STMS Development Team
  * @version 1.0.0
@@ -23,336 +23,142 @@ import java.util.Optional;
 @Repository
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
-    // ===============================================
-    // BASIC FINDER METHODS
-    // ===============================================
-    
-    /**
-     * Find expense by expense number
-     */
+    // Basic queries
     Optional<Expense> findByExpenseNumber(String expenseNumber);
+    Page<Expense> findByExpenseType(String expenseType, Pageable pageable);
+    Page<Expense> findByExpenseCategory(String expenseCategory, Pageable pageable);
+    Page<Expense> findByTripId(Long tripId, Pageable pageable);
+    Page<Expense> findByTruckId(Long truckId, Pageable pageable);
+    Page<Expense> findByDriverId(Long driverId, Pageable pageable);
+    Page<Expense> findByPaymentStatus(String paymentStatus, Pageable pageable);
+    Page<Expense> findByApprovalStatus(String approvalStatus, Pageable pageable);
+    Page<Expense> findByReimbursementStatus(String reimbursementStatus, Pageable pageable);
+    Page<Expense> findByIsRecurring(Boolean isRecurring, Pageable pageable);
     
-    /**
-     * Find expenses by truck
-     */
-    List<Expense> findByTruckId(Long truckId);
-    
-    /**
-     * Find expenses by trip
-     */
-    List<Expense> findByTripId(Long tripId);
-    
-    /**
-     * Find expenses by category
-     */
-    List<Expense> findByCategoryId(Long categoryId);
-    
-    /**
-     * Find expenses by shop
-     */
-    List<Expense> findByShopId(Long shopId);
-    
-    /**
-     * Find expenses by date range
-     */
-    List<Expense> findByExpenseDateBetween(LocalDate startDate, LocalDate endDate);
-
-    // ===============================================
-    // APPROVAL STATUS QUERIES
-    // ===============================================
-    
-    /**
-     * Find pending approval expenses
-     */
-    @Query("SELECT e FROM Expense e WHERE e.isApproved = false ORDER BY e.expenseDate ASC")
-    List<Expense> findPendingApprovalExpenses();
-    
-    /**
-     * Find approved expenses
-     */
-    @Query("SELECT e FROM Expense e WHERE e.isApproved = true ORDER BY e.expenseDate DESC")
-    List<Expense> findApprovedExpenses();
-    
-    /**
-     * Find expenses approved by specific person
-     */
-    List<Expense> findByApprovedBy(String approvedBy);
-    
-    /**
-     * Find high value expenses requiring approval
-     */
-    @Query("SELECT e FROM Expense e WHERE e.amount > :threshold AND e.isApproved = false ORDER BY e.amount DESC")
-    List<Expense> findHighValueExpensesPendingApproval(@Param("threshold") BigDecimal threshold);
-
-    // ===============================================
-    // CATEGORY-WISE ANALYSIS
-    // ===============================================
-    
-    /**
-     * Get expense summary by category
-     */
-    @Query("SELECT e.category, COUNT(e), COALESCE(SUM(e.amount), 0) " +
-           "FROM Expense e " +
-           "WHERE e.expenseDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY e.category " +
-           "ORDER BY SUM(e.amount) DESC")
-    List<Object[]> getExpenseSummaryByCategory(@Param("startDate") LocalDate startDate,
-                                              @Param("endDate") LocalDate endDate);
-    
-    /**
-     * Find fuel expenses
-     */
-    @Query("SELECT e FROM Expense e JOIN e.category c WHERE c.categoryName = 'FUEL' ORDER BY e.expenseDate DESC")
-    List<Expense> findFuelExpenses();
-    
-    /**
-     * Find maintenance expenses
-     */
-    @Query("SELECT e FROM Expense e JOIN e.category c WHERE c.categoryName = 'MAINTENANCE' ORDER BY e.expenseDate DESC")
-    List<Expense> findMaintenanceExpenses();
-    
-    /**
-     * Find toll expenses
-     */
-    @Query("SELECT e FROM Expense e JOIN e.category c WHERE c.categoryName = 'TOLL' ORDER BY e.expenseDate DESC")
-    List<Expense> findTollExpenses();
-    
-    /**
-     * Calculate total fuel cost for period
-     */
-    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e JOIN e.category c " +
-           "WHERE c.categoryName = 'FUEL' AND e.expenseDate BETWEEN :startDate AND :endDate")
-    BigDecimal calculateTotalFuelCost(@Param("startDate") LocalDate startDate,
-                                     @Param("endDate") LocalDate endDate);
-
-    // ===============================================
-    // TRUCK-WISE ANALYSIS
-    // ===============================================
-    
-    /**
-     * Get truck-wise expense summary
-     */
-    @Query("SELECT e.truck, COUNT(e), COALESCE(SUM(e.amount), 0) " +
-           "FROM Expense e " +
-           "WHERE e.expenseDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY e.truck " +
-           "ORDER BY SUM(e.amount) DESC")
-    List<Object[]> getTruckWiseExpenseSummary(@Param("startDate") LocalDate startDate,
-                                             @Param("endDate") LocalDate endDate);
-    
-    /**
-     * Find trucks with highest expenses
-     */
-    @Query("SELECT e.truck, COALESCE(SUM(e.amount), 0) as totalExpense " +
-           "FROM Expense e " +
-           "WHERE e.expenseDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY e.truck " +
-           "ORDER BY totalExpense DESC")
-    Page<Object[]> findTrucksWithHighestExpenses(@Param("startDate") LocalDate startDate,
-                                                @Param("endDate") LocalDate endDate,
-                                                Pageable pageable);
-    
-    /**
-     * Get truck expense breakdown by category
-     */
-    @Query("SELECT e.category.categoryName, COALESCE(SUM(e.amount), 0) " +
-           "FROM Expense e " +
-           "WHERE e.truck.id = :truckId AND e.expenseDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY e.category.categoryName " +
-           "ORDER BY SUM(e.amount) DESC")
-    List<Object[]> getTruckExpenseBreakdown(@Param("truckId") Long truckId,
-                                           @Param("startDate") LocalDate startDate,
-                                           @Param("endDate") LocalDate endDate);
-
-    // ===============================================
-    // TRIP-WISE ANALYSIS
-    // ===============================================
-    
-    /**
-     * Get trip-wise expense summary
-     */
-    @Query("SELECT e.trip, COUNT(e), COALESCE(SUM(e.amount), 0) " +
-           "FROM Expense e " +
-           "WHERE e.trip IS NOT NULL AND e.expenseDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY e.trip " +
-           "ORDER BY SUM(e.amount) DESC")
-    List<Object[]> getTripWiseExpenseSummary(@Param("startDate") LocalDate startDate,
-                                            @Param("endDate") LocalDate endDate);
-    
-    /**
-     * Calculate total expenses for trip
-     */
-    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.trip.id = :tripId")
-    BigDecimal calculateTotalExpensesForTrip(@Param("tripId") Long tripId);
-
-    // ===============================================
-    // SHOP-WISE ANALYSIS
-    // ===============================================
-    
-    /**
-     * Get shop-wise expense summary
-     */
-    @Query("SELECT e.shop, COUNT(e), COALESCE(SUM(e.amount), 0) " +
-           "FROM Expense e " +
-           "WHERE e.shop IS NOT NULL AND e.expenseDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY e.shop " +
-           "ORDER BY SUM(e.amount) DESC")
-    List<Object[]> getShopWiseExpenseSummary(@Param("startDate") LocalDate startDate,
-                                            @Param("endDate") LocalDate endDate);
-    
-    /**
-     * Find preferred shops by expense volume
-     */
-    @Query("SELECT e.shop, COUNT(e) as transactionCount, COALESCE(SUM(e.amount), 0) as totalAmount " +
-           "FROM Expense e " +
-           "WHERE e.shop IS NOT NULL " +
-           "GROUP BY e.shop " +
-           "ORDER BY transactionCount DESC, totalAmount DESC")
-    List<Object[]> findPreferredShopsByVolume();
-
-    // ===============================================
-    // FINANCIAL ANALYSIS
-    // ===============================================
-    
-    /**
-     * Calculate total expenses for period
-     */
-    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.expenseDate BETWEEN :startDate AND :endDate")
-    BigDecimal calculateTotalExpensesForPeriod(@Param("startDate") LocalDate startDate,
-                                              @Param("endDate") LocalDate endDate);
-    
-    /**
-     * Calculate total GST for period
-     */
-    @Query("SELECT COALESCE(SUM(e.gstAmount), 0) FROM Expense e WHERE e.expenseDate BETWEEN :startDate AND :endDate")
-    BigDecimal calculateTotalGSTForPeriod(@Param("startDate") LocalDate startDate,
-                                         @Param("endDate") LocalDate endDate);
-    
-    /**
-     * Get expense trend analysis
-     */
-    @Query("SELECT " +
-           "EXTRACT(YEAR FROM e.expenseDate) as year, " +
-           "EXTRACT(MONTH FROM e.expenseDate) as month, " +
-           "COUNT(e) as expenseCount, " +
-           "COALESCE(SUM(e.amount), 0) as totalAmount " +
-           "FROM Expense e " +
-           "WHERE e.expenseDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY EXTRACT(YEAR FROM e.expenseDate), EXTRACT(MONTH FROM e.expenseDate) " +
-           "ORDER BY year DESC, month DESC")
-    List<Object[]> getExpenseTrendAnalysis(@Param("startDate") LocalDate startDate,
-                                          @Param("endDate") LocalDate endDate);
-
-    // ===============================================
-    // SEARCH AND FILTER QUERIES
-    // ===============================================
-    
-    /**
-     * Search expenses by multiple criteria
-     */
+    // Search queries
     @Query("SELECT e FROM Expense e WHERE " +
-           "(:expenseNumber IS NULL OR e.expenseNumber = :expenseNumber) AND " +
-           "(:truckId IS NULL OR e.truck.id = :truckId) AND " +
-           "(:tripId IS NULL OR e.trip.id = :tripId) AND " +
-           "(:categoryId IS NULL OR e.category.id = :categoryId) AND " +
-           "(:shopId IS NULL OR e.shop.id = :shopId) AND " +
-           "(:isApproved IS NULL OR e.isApproved = :isApproved) AND " +
+           "(:expenseNumber IS NULL OR e.expenseNumber LIKE %:expenseNumber%) AND " +
+           "(:expenseType IS NULL OR e.expenseType = :expenseType) AND " +
+           "(:expenseCategory IS NULL OR e.expenseCategory = :expenseCategory) AND " +
+           "(:paymentStatus IS NULL OR e.paymentStatus = :paymentStatus) AND " +
+           "(:approvalStatus IS NULL OR e.approvalStatus = :approvalStatus) AND " +
            "(:startDate IS NULL OR e.expenseDate >= :startDate) AND " +
-           "(:endDate IS NULL OR e.expenseDate <= :endDate) AND " +
-           "(:minAmount IS NULL OR e.amount >= :minAmount) AND " +
-           "(:maxAmount IS NULL OR e.amount <= :maxAmount)")
+           "(:endDate IS NULL OR e.expenseDate <= :endDate)")
     Page<Expense> searchExpenses(@Param("expenseNumber") String expenseNumber,
-                                @Param("truckId") Long truckId,
-                                @Param("tripId") Long tripId,
-                                @Param("categoryId") Long categoryId,
-                                @Param("shopId") Long shopId,
-                                @Param("isApproved") Boolean isApproved,
+                                @Param("expenseType") String expenseType,
+                                @Param("expenseCategory") String expenseCategory,
+                                @Param("paymentStatus") String paymentStatus,
+                                @Param("approvalStatus") String approvalStatus,
                                 @Param("startDate") LocalDate startDate,
                                 @Param("endDate") LocalDate endDate,
-                                @Param("minAmount") BigDecimal minAmount,
-                                @Param("maxAmount") BigDecimal maxAmount,
                                 Pageable pageable);
     
-    /**
-     * Find expenses by amount range
-     */
-    List<Expense> findByAmountBetween(BigDecimal minAmount, BigDecimal maxAmount);
+    // Approval workflow queries
+    @Query("SELECT e FROM Expense e WHERE e.approvalStatus = 'APPROVED' AND e.approvalDate BETWEEN :startDate AND :endDate")
+    Page<Expense> findApprovedExpenses(@Param("startDate") LocalDate startDate,
+                                      @Param("endDate") LocalDate endDate,
+                                      Pageable pageable);
     
-    /**
-     * Find expenses by description containing
-     */
-    List<Expense> findByDescriptionContainingIgnoreCase(String description);
-
-    // ===============================================
-    // REPORTING QUERIES
-    // ===============================================
+    @Query("SELECT e FROM Expense e WHERE e.approvalStatus = 'REJECTED' AND e.approvalDate BETWEEN :startDate AND :endDate")
+    Page<Expense> findRejectedExpenses(@Param("startDate") LocalDate startDate,
+                                      @Param("endDate") LocalDate endDate,
+                                      Pageable pageable);
     
-    /**
-     * Get monthly expense summary
-     */
-    @Query("SELECT " +
-           "EXTRACT(YEAR FROM e.expenseDate) as year, " +
-           "EXTRACT(MONTH FROM e.expenseDate) as month, " +
-           "COUNT(e) as expenseCount, " +
-           "COUNT(CASE WHEN e.isApproved = true THEN 1 END) as approvedCount, " +
-           "COALESCE(SUM(e.amount), 0) as totalAmount, " +
-           "COALESCE(SUM(e.gstAmount), 0) as totalGST " +
-           "FROM Expense e " +
-           "WHERE e.expenseDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY EXTRACT(YEAR FROM e.expenseDate), EXTRACT(MONTH FROM e.expenseDate) " +
-           "ORDER BY year DESC, month DESC")
+    @Query("SELECT e.approvalStatus, COUNT(e), SUM(e.amount) FROM Expense e WHERE " +
+           "e.expenseDate BETWEEN :startDate AND :endDate GROUP BY e.approvalStatus")
+    List<Object[]> getApprovalSummary(@Param("startDate") LocalDate startDate,
+                                     @Param("endDate") LocalDate endDate);
+    
+    // Payment queries
+    @Query("SELECT e FROM Expense e WHERE e.paymentStatus = 'PENDING' AND e.approvalStatus = 'APPROVED'")
+    Page<Expense> findOverdueExpenses(Pageable pageable);
+    
+    @Query("SELECT SUM(e.amount) FROM Expense e WHERE e.paymentStatus = 'PENDING' AND e.approvalStatus = 'APPROVED'")
+    BigDecimal calculateTotalPendingAmount();
+    
+    @Query("SELECT e.paymentStatus, COUNT(e), SUM(e.amount) FROM Expense e WHERE " +
+           "e.expenseDate BETWEEN :startDate AND :endDate GROUP BY e.paymentStatus")
+    List<Object[]> getPaymentSummary(@Param("startDate") LocalDate startDate,
+                                    @Param("endDate") LocalDate endDate);
+    
+    // Reimbursement queries
+    @Query("SELECT e FROM Expense e WHERE e.reimbursementStatus = 'PROCESSED' AND e.expenseDate BETWEEN :startDate AND :endDate")
+    Page<Expense> findProcessedReimbursements(@Param("startDate") LocalDate startDate,
+                                             @Param("endDate") LocalDate endDate,
+                                             Pageable pageable);
+    
+    @Query("SELECT SUM(e.reimbursementAmount) FROM Expense e WHERE e.reimbursementStatus = 'PROCESSED' AND " +
+           "e.expenseDate BETWEEN :startDate AND :endDate")
+    BigDecimal calculateTotalReimbursementAmount(@Param("startDate") LocalDate startDate,
+                                                @Param("endDate") LocalDate endDate);
+    
+    // Recurring expenses
+    @Query("SELECT e FROM Expense e WHERE e.isRecurring = true AND e.nextRecurringDate <= :date")
+    List<Expense> findRecurringExpensesDue(@Param("date") LocalDate date);
+    
+    // Reporting queries
+    @Query("SELECT e.expenseType, COUNT(e), SUM(e.amount) FROM Expense e WHERE " +
+           "e.expenseDate BETWEEN :startDate AND :endDate GROUP BY e.expenseType")
+    List<Object[]> getExpenseByTypeReport(@Param("startDate") LocalDate startDate,
+                                         @Param("endDate") LocalDate endDate);
+    
+    @Query("SELECT e.expenseCategory, COUNT(e), SUM(e.amount) FROM Expense e WHERE " +
+           "e.expenseDate BETWEEN :startDate AND :endDate GROUP BY e.expenseCategory")
+    List<Object[]> getExpenseByCategoryReport(@Param("startDate") LocalDate startDate,
+                                             @Param("endDate") LocalDate endDate);
+    
+    @Query("SELECT t.truckNumber, COUNT(e), SUM(e.amount) FROM Expense e JOIN e.truck t WHERE " +
+           "e.expenseDate BETWEEN :startDate AND :endDate GROUP BY t.id, t.truckNumber")
+    List<Object[]> getTruckWiseExpenseReport(@Param("startDate") LocalDate startDate,
+                                            @Param("endDate") LocalDate endDate);
+    
+    @Query("SELECT d.name, COUNT(e), SUM(e.amount) FROM Expense e JOIN e.driver d WHERE " +
+           "e.expenseDate BETWEEN :startDate AND :endDate GROUP BY d.id, d.name")
+    List<Object[]> getDriverWiseExpenseReport(@Param("startDate") LocalDate startDate,
+                                             @Param("endDate") LocalDate endDate);
+    
+    @Query("SELECT e.vendorName, COUNT(e), SUM(e.amount) FROM Expense e WHERE " +
+           "e.vendorName IS NOT NULL AND e.expenseDate BETWEEN :startDate AND :endDate " +
+           "GROUP BY e.vendorName")
+    List<Object[]> getVendorWiseExpenseReport(@Param("startDate") LocalDate startDate,
+                                             @Param("endDate") LocalDate endDate);
+    
+    @Query("SELECT MONTH(e.expenseDate), YEAR(e.expenseDate), COUNT(e), SUM(e.amount) FROM Expense e WHERE " +
+           "e.expenseDate BETWEEN :startDate AND :endDate " +
+           "GROUP BY YEAR(e.expenseDate), MONTH(e.expenseDate) " +
+           "ORDER BY YEAR(e.expenseDate), MONTH(e.expenseDate)")
     List<Object[]> getMonthlyExpenseSummary(@Param("startDate") LocalDate startDate,
                                            @Param("endDate") LocalDate endDate);
     
-    /**
-     * Get expense statistics
-     */
-    @Query("SELECT " +
-           "COUNT(e) as totalExpenses, " +
-           "COUNT(CASE WHEN e.isApproved = true THEN 1 END) as approvedExpenses, " +
-           "COUNT(CASE WHEN e.isApproved = false THEN 1 END) as pendingExpenses, " +
-           "COALESCE(SUM(e.amount), 0) as totalAmount, " +
-           "COALESCE(AVG(e.amount), 0) as averageAmount, " +
-           "COALESCE(SUM(e.gstAmount), 0) as totalGST " +
+    @Query("SELECT SUM(e.amount) FROM Expense e WHERE e.expenseDate BETWEEN :startDate AND :endDate")
+    BigDecimal calculateTotalExpenses(@Param("startDate") LocalDate startDate,
+                                     @Param("endDate") LocalDate endDate);
+    
+    @Query("SELECT e FROM Expense e WHERE " +
+           "(:startDate IS NULL OR e.expenseDate >= :startDate) AND " +
+           "(:endDate IS NULL OR e.expenseDate <= :endDate) AND " +
+           "(:expenseType IS NULL OR e.expenseType = :expenseType) AND " +
+           "(:status IS NULL OR e.paymentStatus = :status)")
+    List<Expense> findExpensesForReport(@Param("startDate") LocalDate startDate,
+                                       @Param("endDate") LocalDate endDate,
+                                       @Param("expenseType") String expenseType,
+                                       @Param("status") String status);
+    
+    // Statistics queries
+    @Query("SELECT COUNT(e), " +
+           "COUNT(CASE WHEN e.paymentStatus = 'PENDING' THEN 1 END), " +
+           "COUNT(CASE WHEN e.paymentStatus = 'PAID' THEN 1 END), " +
+           "COUNT(CASE WHEN e.approvalStatus = 'PENDING' THEN 1 END), " +
+           "COUNT(CASE WHEN e.approvalStatus = 'APPROVED' THEN 1 END), " +
+           "SUM(e.amount) " +
            "FROM Expense e")
     Object[] getExpenseStatistics();
     
-    /**
-     * Get top expense categories
-     */
-    @Query("SELECT e.category.categoryName, COUNT(e), COALESCE(SUM(e.amount), 0) " +
-           "FROM Expense e " +
-           "GROUP BY e.category.categoryName " +
-           "ORDER BY SUM(e.amount) DESC")
-    List<Object[]> getTopExpenseCategories();
-
-    // ===============================================
-    // VALIDATION QUERIES
-    // ===============================================
-    
-    /**
-     * Check if expense number exists for different expense
-     */
+    // Utility queries
     boolean existsByExpenseNumberAndIdNot(String expenseNumber, Long id);
+    long countByExpenseTypeAndPaymentStatus(String expenseType, String paymentStatus);
     
-    /**
-     * Count approved expenses
-     */
-    long countByIsApprovedTrue();
-    
-    /**
-     * Count pending approval expenses
-     */
-    long countByIsApprovedFalse();
-    
-    /**
-     * Count expenses for truck in date range
-     */
-    long countByTruckIdAndExpenseDateBetween(Long truckId, LocalDate startDate, LocalDate endDate);
-    
-    /**
-     * Count expenses by category
-     */
-    long countByCategoryId(Long categoryId);
+    @Query("SELECT e.expenseNumber FROM Expense e WHERE e.expenseNumber LIKE :pattern ORDER BY e.expenseNumber DESC")
+    String findLastExpenseNumberForDate(@Param("pattern") String pattern);
 }
 

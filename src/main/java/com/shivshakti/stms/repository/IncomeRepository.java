@@ -15,7 +15,7 @@ import java.util.Optional;
 
 /**
  * Repository interface for Income entity
- * Provides CRUD operations and custom queries for income management
+ * Provides data access operations for income management
  * 
  * @author STMS Development Team
  * @version 1.0.0
@@ -23,360 +23,132 @@ import java.util.Optional;
 @Repository
 public interface IncomeRepository extends JpaRepository<Income, Long> {
 
-    // ===============================================
-    // BASIC FINDER METHODS
-    // ===============================================
-    
-    /**
-     * Find income by income number
-     */
+    // Basic queries
     Optional<Income> findByIncomeNumber(String incomeNumber);
+    Page<Income> findByIncomeType(String incomeType, Pageable pageable);
+    Page<Income> findByIncomeCategory(String incomeCategory, Pageable pageable);
+    Page<Income> findByTripId(Long tripId, Pageable pageable);
+    Page<Income> findByClientId(Long clientId, Pageable pageable);
+    Page<Income> findByBuiltyId(Long builtyId, Pageable pageable);
+    Page<Income> findByPaymentStatus(String paymentStatus, Pageable pageable);
+    Page<Income> findByIsRecurring(Boolean isRecurring, Pageable pageable);
     
-    /**
-     * Find incomes by client
-     */
-    List<Income> findByClientId(Long clientId);
-    
-    /**
-     * Find incomes by builty
-     */
-    List<Income> findByBuiltyId(Long builtyId);
-    
-    /**
-     * Find incomes by trip
-     */
-    List<Income> findByTripId(Long tripId);
-    
-    /**
-     * Find incomes by income type
-     */
-    List<Income> findByIncomeType(Income.IncomeType incomeType);
-    
-    /**
-     * Find incomes by payment mode
-     */
-    List<Income> findByPaymentMode(Income.PaymentMode paymentMode);
-    
-    /**
-     * Find incomes by date range
-     */
-    List<Income> findByIncomeDateBetween(LocalDate startDate, LocalDate endDate);
-
-    // ===============================================
-    // INCOME TYPE ANALYSIS
-    // ===============================================
-    
-    /**
-     * Find trip payment incomes
-     */
-    @Query("SELECT i FROM Income i WHERE i.incomeType = 'TRIP_PAYMENT' ORDER BY i.incomeDate DESC")
-    List<Income> findTripPaymentIncomes();
-    
-    /**
-     * Find advance payment incomes
-     */
-    @Query("SELECT i FROM Income i WHERE i.incomeType = 'ADVANCE' ORDER BY i.incomeDate DESC")
-    List<Income> findAdvancePaymentIncomes();
-    
-    /**
-     * Find detention charges
-     */
-    @Query("SELECT i FROM Income i WHERE i.incomeType = 'DETENTION' ORDER BY i.incomeDate DESC")
-    List<Income> findDetentionCharges();
-    
-    /**
-     * Get income summary by type
-     */
-    @Query("SELECT i.incomeType, COUNT(i), COALESCE(SUM(i.amount), 0) " +
-           "FROM Income i " +
-           "WHERE i.incomeDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY i.incomeType " +
-           "ORDER BY SUM(i.amount) DESC")
-    List<Object[]> getIncomeSummaryByType(@Param("startDate") LocalDate startDate,
-                                         @Param("endDate") LocalDate endDate);
-    
-    /**
-     * Calculate total advance payments for period
-     */
-    @Query("SELECT COALESCE(SUM(i.amount), 0) FROM Income i " +
-           "WHERE i.incomeType = 'ADVANCE' AND i.incomeDate BETWEEN :startDate AND :endDate")
-    BigDecimal calculateTotalAdvancePayments(@Param("startDate") LocalDate startDate,
-                                            @Param("endDate") LocalDate endDate);
-
-    // ===============================================
-    // PAYMENT MODE ANALYSIS
-    // ===============================================
-    
-    /**
-     * Find cash payments
-     */
-    @Query("SELECT i FROM Income i WHERE i.paymentMode = 'CASH' ORDER BY i.incomeDate DESC")
-    List<Income> findCashPayments();
-    
-    /**
-     * Find cheque payments
-     */
-    @Query("SELECT i FROM Income i WHERE i.paymentMode = 'CHEQUE' ORDER BY i.incomeDate DESC")
-    List<Income> findChequePayments();
-    
-    /**
-     * Find bank transfer payments
-     */
-    @Query("SELECT i FROM Income i WHERE i.paymentMode IN ('BANK_TRANSFER', 'NEFT', 'RTGS', 'UPI') ORDER BY i.incomeDate DESC")
-    List<Income> findBankTransferPayments();
-    
-    /**
-     * Get payment mode distribution
-     */
-    @Query("SELECT i.paymentMode, COUNT(i), COALESCE(SUM(i.amount), 0) " +
-           "FROM Income i " +
-           "WHERE i.incomeDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY i.paymentMode " +
-           "ORDER BY SUM(i.amount) DESC")
-    List<Object[]> getPaymentModeDistribution(@Param("startDate") LocalDate startDate,
-                                             @Param("endDate") LocalDate endDate);
-
-    // ===============================================
-    // CLIENT-WISE ANALYSIS
-    // ===============================================
-    
-    /**
-     * Get client-wise income summary
-     */
-    @Query("SELECT i.client, COUNT(i), COALESCE(SUM(i.amount), 0) " +
-           "FROM Income i " +
-           "WHERE i.incomeDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY i.client " +
-           "ORDER BY SUM(i.amount) DESC")
-    List<Object[]> getClientWiseIncomeSummary(@Param("startDate") LocalDate startDate,
-                                             @Param("endDate") LocalDate endDate);
-    
-    /**
-     * Find top paying clients
-     */
-    @Query("SELECT i.client, COALESCE(SUM(i.amount), 0) as totalPayment " +
-           "FROM Income i " +
-           "WHERE i.incomeDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY i.client " +
-           "ORDER BY totalPayment DESC")
-    Page<Object[]> findTopPayingClients(@Param("startDate") LocalDate startDate,
-                                       @Param("endDate") LocalDate endDate,
-                                       Pageable pageable);
-    
-    /**
-     * Get client payment pattern
-     */
-    @Query("SELECT i.client, i.paymentMode, COUNT(i), COALESCE(SUM(i.amount), 0) " +
-           "FROM Income i " +
-           "WHERE i.client.id = :clientId " +
-           "GROUP BY i.client, i.paymentMode " +
-           "ORDER BY SUM(i.amount) DESC")
-    List<Object[]> getClientPaymentPattern(@Param("clientId") Long clientId);
-
-    // ===============================================
-    // TRIP-WISE ANALYSIS
-    // ===============================================
-    
-    /**
-     * Get trip-wise income summary
-     */
-    @Query("SELECT i.trip, COUNT(i), COALESCE(SUM(i.amount), 0) " +
-           "FROM Income i " +
-           "WHERE i.trip IS NOT NULL AND i.incomeDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY i.trip " +
-           "ORDER BY SUM(i.amount) DESC")
-    List<Object[]> getTripWiseIncomeSummary(@Param("startDate") LocalDate startDate,
-                                           @Param("endDate") LocalDate endDate);
-    
-    /**
-     * Calculate total income for trip
-     */
-    @Query("SELECT COALESCE(SUM(i.amount), 0) FROM Income i WHERE i.trip.id = :tripId")
-    BigDecimal calculateTotalIncomeForTrip(@Param("tripId") Long tripId);
-
-    // ===============================================
-    // FINANCIAL ANALYSIS
-    // ===============================================
-    
-    /**
-     * Calculate total income for period
-     */
-    @Query("SELECT COALESCE(SUM(i.amount), 0) FROM Income i WHERE i.incomeDate BETWEEN :startDate AND :endDate")
-    BigDecimal calculateTotalIncomeForPeriod(@Param("startDate") LocalDate startDate,
-                                            @Param("endDate") LocalDate endDate);
-    
-    /**
-     * Get income trend analysis
-     */
-    @Query("SELECT " +
-           "EXTRACT(YEAR FROM i.incomeDate) as year, " +
-           "EXTRACT(MONTH FROM i.incomeDate) as month, " +
-           "COUNT(i) as incomeCount, " +
-           "COALESCE(SUM(i.amount), 0) as totalAmount " +
-           "FROM Income i " +
-           "WHERE i.incomeDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY EXTRACT(YEAR FROM i.incomeDate), EXTRACT(MONTH FROM i.incomeDate) " +
-           "ORDER BY year DESC, month DESC")
-    List<Object[]> getIncomeTrendAnalysis(@Param("startDate") LocalDate startDate,
-                                         @Param("endDate") LocalDate endDate);
-    
-    /**
-     * Get daily income summary
-     */
-    @Query("SELECT i.incomeDate, COUNT(i), COALESCE(SUM(i.amount), 0) " +
-           "FROM Income i " +
-           "WHERE i.incomeDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY i.incomeDate " +
-           "ORDER BY i.incomeDate DESC")
-    List<Object[]> getDailyIncomeSummary(@Param("startDate") LocalDate startDate,
-                                        @Param("endDate") LocalDate endDate);
-
-    // ===============================================
-    // BANK DETAILS ANALYSIS
-    // ===============================================
-    
-    /**
-     * Find incomes by bank name
-     */
-    List<Income> findByBankNameContainingIgnoreCase(String bankName);
-    
-    /**
-     * Find incomes by cheque number
-     */
-    Optional<Income> findByChequeNumber(String chequeNumber);
-    
-    /**
-     * Find incomes by transaction reference
-     */
-    Optional<Income> findByTransactionReference(String transactionReference);
-    
-    /**
-     * Get bank-wise income summary
-     */
-    @Query("SELECT i.bankName, COUNT(i), COALESCE(SUM(i.amount), 0) " +
-           "FROM Income i " +
-           "WHERE i.bankName IS NOT NULL AND i.incomeDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY i.bankName " +
-           "ORDER BY SUM(i.amount) DESC")
-    List<Object[]> getBankWiseIncomeSummary(@Param("startDate") LocalDate startDate,
-                                           @Param("endDate") LocalDate endDate);
-
-    // ===============================================
-    // SEARCH AND FILTER QUERIES
-    // ===============================================
-    
-    /**
-     * Search incomes by multiple criteria
-     */
+    // Search queries
     @Query("SELECT i FROM Income i WHERE " +
-           "(:incomeNumber IS NULL OR i.incomeNumber = :incomeNumber) AND " +
-           "(:clientId IS NULL OR i.client.id = :clientId) AND " +
-           "(:builtyId IS NULL OR i.builty.id = :builtyId) AND " +
-           "(:tripId IS NULL OR i.trip.id = :tripId) AND " +
+           "(:incomeNumber IS NULL OR i.incomeNumber LIKE %:incomeNumber%) AND " +
            "(:incomeType IS NULL OR i.incomeType = :incomeType) AND " +
-           "(:paymentMode IS NULL OR i.paymentMode = :paymentMode) AND " +
+           "(:incomeCategory IS NULL OR i.incomeCategory = :incomeCategory) AND " +
+           "(:paymentStatus IS NULL OR i.paymentStatus = :paymentStatus) AND " +
            "(:startDate IS NULL OR i.incomeDate >= :startDate) AND " +
-           "(:endDate IS NULL OR i.incomeDate <= :endDate) AND " +
-           "(:minAmount IS NULL OR i.amount >= :minAmount) AND " +
-           "(:maxAmount IS NULL OR i.amount <= :maxAmount)")
+           "(:endDate IS NULL OR i.incomeDate <= :endDate)")
     Page<Income> searchIncomes(@Param("incomeNumber") String incomeNumber,
-                              @Param("clientId") Long clientId,
-                              @Param("builtyId") Long builtyId,
-                              @Param("tripId") Long tripId,
-                              @Param("incomeType") Income.IncomeType incomeType,
-                              @Param("paymentMode") Income.PaymentMode paymentMode,
+                              @Param("incomeType") String incomeType,
+                              @Param("incomeCategory") String incomeCategory,
+                              @Param("paymentStatus") String paymentStatus,
                               @Param("startDate") LocalDate startDate,
                               @Param("endDate") LocalDate endDate,
-                              @Param("minAmount") BigDecimal minAmount,
-                              @Param("maxAmount") BigDecimal maxAmount,
                               Pageable pageable);
     
-    /**
-     * Find incomes by amount range
-     */
-    List<Income> findByAmountBetween(BigDecimal minAmount, BigDecimal maxAmount);
+    // Payment queries
+    @Query("SELECT i FROM Income i WHERE i.paymentStatus = 'OVERDUE'")
+    Page<Income> findOverdueIncomes(Pageable pageable);
     
-    /**
-     * Find high value incomes
-     */
-    @Query("SELECT i FROM Income i WHERE i.amount > :threshold ORDER BY i.amount DESC")
-    List<Income> findHighValueIncomes(@Param("threshold") BigDecimal threshold);
-
-    // ===============================================
-    // REPORTING QUERIES
-    // ===============================================
+    @Query("SELECT i FROM Income i WHERE i.paymentStatus = 'PARTIALLY_RECEIVED'")
+    Page<Income> findPartiallyReceivedIncomes(Pageable pageable);
     
-    /**
-     * Get monthly income summary
-     */
-    @Query("SELECT " +
-           "EXTRACT(YEAR FROM i.incomeDate) as year, " +
-           "EXTRACT(MONTH FROM i.incomeDate) as month, " +
-           "COUNT(i) as incomeCount, " +
-           "COALESCE(SUM(i.amount), 0) as totalAmount, " +
-           "COUNT(CASE WHEN i.incomeType = 'ADVANCE' THEN 1 END) as advanceCount, " +
-           "COUNT(CASE WHEN i.paymentMode = 'CASH' THEN 1 END) as cashCount " +
-           "FROM Income i " +
-           "WHERE i.incomeDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY EXTRACT(YEAR FROM i.incomeDate), EXTRACT(MONTH FROM i.incomeDate) " +
-           "ORDER BY year DESC, month DESC")
+    @Query("SELECT SUM(i.amount + i.gstAmount - i.tdsAmount) FROM Income i WHERE i.paymentStatus = 'PENDING'")
+    BigDecimal calculateTotalPendingAmount();
+    
+    @Query("SELECT SUM(i.receivedAmount) FROM Income i WHERE i.paymentStatus = 'RECEIVED' AND " +
+           "i.paymentDate BETWEEN :startDate AND :endDate")
+    BigDecimal calculateTotalReceivedAmount(@Param("startDate") LocalDate startDate,
+                                           @Param("endDate") LocalDate endDate);
+    
+    @Query("SELECT i.paymentStatus, COUNT(i), SUM(i.amount + i.gstAmount - i.tdsAmount) FROM Income i WHERE " +
+           "i.incomeDate BETWEEN :startDate AND :endDate GROUP BY i.paymentStatus")
+    List<Object[]> getPaymentSummary(@Param("startDate") LocalDate startDate,
+                                    @Param("endDate") LocalDate endDate);
+    
+    // Recurring income queries
+    @Query("SELECT i FROM Income i WHERE i.isRecurring = true AND i.nextRecurringDate <= :date")
+    List<Income> findRecurringIncomesDue(@Param("date") LocalDate date);
+    
+    // Reporting queries
+    @Query("SELECT i.incomeType, COUNT(i), SUM(i.amount) FROM Income i WHERE " +
+           "i.incomeDate BETWEEN :startDate AND :endDate GROUP BY i.incomeType")
+    List<Object[]> getIncomeByTypeReport(@Param("startDate") LocalDate startDate,
+                                        @Param("endDate") LocalDate endDate);
+    
+    @Query("SELECT i.incomeCategory, COUNT(i), SUM(i.amount) FROM Income i WHERE " +
+           "i.incomeDate BETWEEN :startDate AND :endDate GROUP BY i.incomeCategory")
+    List<Object[]> getIncomeByCategoryReport(@Param("startDate") LocalDate startDate,
+                                            @Param("endDate") LocalDate endDate);
+    
+    @Query("SELECT c.name, COUNT(i), SUM(i.amount + i.gstAmount - i.tdsAmount) FROM Income i JOIN i.client c WHERE " +
+           "i.incomeDate BETWEEN :startDate AND :endDate GROUP BY c.id, c.name")
+    List<Object[]> getClientWiseIncomeReport(@Param("startDate") LocalDate startDate,
+                                            @Param("endDate") LocalDate endDate);
+    
+    @Query("SELECT t.tripNumber, COUNT(i), SUM(i.amount + i.gstAmount - i.tdsAmount) FROM Income i JOIN i.trip t WHERE " +
+           "i.incomeDate BETWEEN :startDate AND :endDate GROUP BY t.id, t.tripNumber")
+    List<Object[]> getTripWiseIncomeReport(@Param("startDate") LocalDate startDate,
+                                          @Param("endDate") LocalDate endDate);
+    
+    @Query("SELECT MONTH(i.incomeDate), YEAR(i.incomeDate), COUNT(i), SUM(i.amount) FROM Income i WHERE " +
+           "i.incomeDate BETWEEN :startDate AND :endDate " +
+           "GROUP BY YEAR(i.incomeDate), MONTH(i.incomeDate) " +
+           "ORDER BY YEAR(i.incomeDate), MONTH(i.incomeDate)")
     List<Object[]> getMonthlyIncomeSummary(@Param("startDate") LocalDate startDate,
                                           @Param("endDate") LocalDate endDate);
     
-    /**
-     * Get income statistics
-     */
+    @Query("SELECT SUM(i.amount) FROM Income i WHERE i.incomeDate BETWEEN :startDate AND :endDate")
+    BigDecimal calculateTotalIncome(@Param("startDate") LocalDate startDate,
+                                   @Param("endDate") LocalDate endDate);
+    
+    @Query("SELECT i FROM Income i WHERE " +
+           "(:startDate IS NULL OR i.incomeDate >= :startDate) AND " +
+           "(:endDate IS NULL OR i.incomeDate <= :endDate) AND " +
+           "(:incomeType IS NULL OR i.incomeType = :incomeType) AND " +
+           "(:status IS NULL OR i.paymentStatus = :status)")
+    List<Income> findIncomesForReport(@Param("startDate") LocalDate startDate,
+                                     @Param("endDate") LocalDate endDate,
+                                     @Param("incomeType") String incomeType,
+                                     @Param("status") String status);
+    
+    // Cash flow and aging reports
+    @Query("SELECT DATE(i.incomeDate), SUM(i.receivedAmount), SUM(i.amount + i.gstAmount - i.tdsAmount - i.receivedAmount) " +
+           "FROM Income i WHERE i.incomeDate BETWEEN :startDate AND :endDate " +
+           "GROUP BY DATE(i.incomeDate) ORDER BY DATE(i.incomeDate)")
+    List<Object[]> getCashFlowReport(@Param("startDate") LocalDate startDate,
+                                    @Param("endDate") LocalDate endDate);
+    
     @Query("SELECT " +
-           "COUNT(i) as totalIncomes, " +
-           "COALESCE(SUM(i.amount), 0) as totalAmount, " +
-           "COALESCE(AVG(i.amount), 0) as averageAmount, " +
-           "COUNT(CASE WHEN i.incomeType = 'TRIP_PAYMENT' THEN 1 END) as tripPayments, " +
-           "COUNT(CASE WHEN i.incomeType = 'ADVANCE' THEN 1 END) as advancePayments, " +
-           "COUNT(CASE WHEN i.paymentMode = 'CASH' THEN 1 END) as cashPayments " +
+           "COUNT(CASE WHEN DATEDIFF(CURRENT_DATE, i.expectedDate) <= 30 THEN 1 END), " +
+           "COUNT(CASE WHEN DATEDIFF(CURRENT_DATE, i.expectedDate) BETWEEN 31 AND 60 THEN 1 END), " +
+           "COUNT(CASE WHEN DATEDIFF(CURRENT_DATE, i.expectedDate) BETWEEN 61 AND 90 THEN 1 END), " +
+           "COUNT(CASE WHEN DATEDIFF(CURRENT_DATE, i.expectedDate) > 90 THEN 1 END), " +
+           "SUM(CASE WHEN DATEDIFF(CURRENT_DATE, i.expectedDate) <= 30 THEN i.amount + i.gstAmount - i.tdsAmount - i.receivedAmount ELSE 0 END), " +
+           "SUM(CASE WHEN DATEDIFF(CURRENT_DATE, i.expectedDate) BETWEEN 31 AND 60 THEN i.amount + i.gstAmount - i.tdsAmount - i.receivedAmount ELSE 0 END), " +
+           "SUM(CASE WHEN DATEDIFF(CURRENT_DATE, i.expectedDate) BETWEEN 61 AND 90 THEN i.amount + i.gstAmount - i.tdsAmount - i.receivedAmount ELSE 0 END), " +
+           "SUM(CASE WHEN DATEDIFF(CURRENT_DATE, i.expectedDate) > 90 THEN i.amount + i.gstAmount - i.tdsAmount - i.receivedAmount ELSE 0 END) " +
+           "FROM Income i WHERE i.paymentStatus IN ('PENDING', 'PARTIALLY_RECEIVED', 'OVERDUE')")
+    List<Object[]> getAgingReport();
+    
+    // Statistics queries
+    @Query("SELECT COUNT(i), " +
+           "COUNT(CASE WHEN i.paymentStatus = 'PENDING' THEN 1 END), " +
+           "COUNT(CASE WHEN i.paymentStatus = 'RECEIVED' THEN 1 END), " +
+           "COUNT(CASE WHEN i.paymentStatus = 'PARTIALLY_RECEIVED' THEN 1 END), " +
+           "COUNT(CASE WHEN i.paymentStatus = 'OVERDUE' THEN 1 END), " +
+           "SUM(i.amount) " +
            "FROM Income i")
     Object[] getIncomeStatistics();
     
-    /**
-     * Get top income sources
-     */
-    @Query("SELECT i.incomeType, COUNT(i), COALESCE(SUM(i.amount), 0) " +
-           "FROM Income i " +
-           "GROUP BY i.incomeType " +
-           "ORDER BY SUM(i.amount) DESC")
-    List<Object[]> getTopIncomeSources();
-
-    // ===============================================
-    // VALIDATION QUERIES
-    // ===============================================
-    
-    /**
-     * Check if income number exists for different income
-     */
+    // Utility queries
     boolean existsByIncomeNumberAndIdNot(String incomeNumber, Long id);
+    long countByIncomeTypeAndPaymentStatus(String incomeType, String paymentStatus);
     
-    /**
-     * Check if cheque number exists for different income
-     */
-    boolean existsByChequeNumberAndIdNot(String chequeNumber, Long id);
-    
-    /**
-     * Check if transaction reference exists for different income
-     */
-    boolean existsByTransactionReferenceAndIdNot(String transactionReference, Long id);
-    
-    /**
-     * Count incomes by type
-     */
-    long countByIncomeType(Income.IncomeType incomeType);
-    
-    /**
-     * Count incomes by payment mode
-     */
-    long countByPaymentMode(Income.PaymentMode paymentMode);
-    
-    /**
-     * Count incomes for client in date range
-     */
-    long countByClientIdAndIncomeDateBetween(Long clientId, LocalDate startDate, LocalDate endDate);
+    @Query("SELECT i.incomeNumber FROM Income i WHERE i.incomeNumber LIKE :pattern ORDER BY i.incomeNumber DESC")
+    String findLastIncomeNumberForDate(@Param("pattern") String pattern);
 }
 

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle} + ' - Shivshakti Transport Management System'">STMS</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link th:href="@{/css/style.css}" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-bg: #ecf0f1;
+            --dark-text: #2c3e50;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-bg);
+            color: var(--dark-text);
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        
+        .sidebar {
+            background-color: var(--primary-color);
+            min-height: calc(100vh - 56px);
+            padding: 0;
+        }
+        
+        .sidebar .nav-link {
+            color: #bdc3c7;
+            padding: 12px 20px;
+            border-bottom: 1px solid #34495e;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .sidebar .nav-link i {
+            margin-right: 10px;
+            width: 20px;
+        }
+        
+        .main-content {
+            padding: 20px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+            padding: 15px 20px;
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+            border-color: var(--warning-color);
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stats-card h3 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stats-card p {
+            margin-bottom: 0;
+            opacity: 0.9;
+        }
+        
+        .table {
+            background-color: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .table thead th {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+        
+        .footer {
+            background-color: var(--primary-color);
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+            margin-top: 40px;
+        }
+        
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+        
+        .modal-header {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .modal-content {
+            border-radius: 15px;
+            border: none;
+        }
+        
+        .badge {
+            font-size: 0.8rem;
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+        
+        .status-planned { background-color: var(--warning-color); }
+        .status-running { background-color: var(--secondary-color); }
+        .status-completed { background-color: var(--success-color); }
+        .status-cancelled { background-color: var(--danger-color); }
+        .status-pending { background-color: var(--warning-color); }
+        .status-paid { background-color: var(--success-color); }
+        .status-overdue { background-color: var(--danger-color); }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" th:href="@{/}">
+                <i class="fas fa-truck"></i> Shivshakti Transport Management System
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user"></i> Admin
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-cog"></i> Settings</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" th:href="@{/}" th:classappend="${#request.requestURI == '/' ? 'active' : ''}">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" th:href="@{/drivers}" th:classappend="${#strings.startsWith(#request.requestURI, '/drivers') ? 'active' : ''}">
+                                <i class="fas fa-users"></i> Drivers
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" th:href="@{/clients}" th:classappend="${#strings.startsWith(#request.requestURI, '/clients') ? 'active' : ''}">
+                                <i class="fas fa-handshake"></i> Clients
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" th:href="@{/trucks}" th:classappend="${#strings.startsWith(#request.requestURI, '/trucks') ? 'active' : ''}">
+                                <i class="fas fa-truck"></i> Trucks
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" th:href="@{/trips}" th:classappend="${#strings.startsWith(#request.requestURI, '/trips') ? 'active' : ''}">
+                                <i class="fas fa-route"></i> Trips
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" th:href="@{/builties}" th:classappend="${#strings.startsWith(#request.requestURI, '/builties') ? 'active' : ''}">
+                                <i class="fas fa-file-invoice"></i> Builties
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" th:href="@{/expenses}" th:classappend="${#strings.startsWith(#request.requestURI, '/expenses') ? 'active' : ''}">
+                                <i class="fas fa-money-bill-wave"></i> Expenses
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" th:href="@{/incomes}" th:classappend="${#strings.startsWith(#request.requestURI, '/incomes') ? 'active' : ''}">
+                                <i class="fas fa-coins"></i> Income
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" th:href="@{/maintenance}" th:classappend="${#strings.startsWith(#request.requestURI, '/maintenance') ? 'active' : ''}">
+                                <i class="fas fa-tools"></i> Maintenance
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" th:href="@{/reports}" th:classappend="${#strings.startsWith(#request.requestURI, '/reports') ? 'active' : ''}">
+                                <i class="fas fa-chart-bar"></i> Reports
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
+                <!-- Breadcrumb -->
+                <nav aria-label="breadcrumb" th:if="${breadcrumbs}">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item" th:each="breadcrumb : ${breadcrumbs}" 
+                            th:classappend="${breadcrumb.active} ? 'active' : ''">
+                            <a th:if="${!breadcrumb.active}" th:href="${breadcrumb.url}" th:text="${breadcrumb.name}"></a>
+                            <span th:if="${breadcrumb.active}" th:text="${breadcrumb.name}"></span>
+                        </li>
+                    </ol>
+                </nav>
+
+                <!-- Page Header -->
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2" th:text="${pageTitle}">Page Title</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0" th:if="${pageActions}">
+                        <div class="btn-group me-2" th:each="action : ${pageActions}">
+                            <a th:href="${action.url}" th:class="${'btn ' + action.cssClass}" th:text="${action.name}"></a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alert Messages -->
+                <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle"></i> <span th:text="${successMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                
+                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                
+                <div th:if="${warningMessage}" class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-triangle"></i> <span th:text="${warningMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                
+                <div th:if="${infoMessage}" class="alert alert-info alert-dismissible fade show" role="alert">
+                    <i class="fas fa-info-circle"></i> <span th:text="${infoMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- Main Content Area -->
+                <div th:replace="${contentTemplate}">
+                    <!-- Page content will be inserted here -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Shivshakti Transport Management System. All rights reserved.</p>
+            <p>Version 1.0.0 | Built with Spring Boot & Thymeleaf</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <!-- Custom JS -->
+    <script th:src="@{/js/app.js}"></script>
+    
+    <script>
+        // Common JavaScript functions
+        function confirmDelete(message) {
+            return confirm(message || 'Are you sure you want to delete this item?');
+        }
+        
+        function showLoading() {
+            // Show loading spinner
+            const loadingHtml = '<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><br>Loading...</div>';
+            $('#loadingModal .modal-body').html(loadingHtml);
+            $('#loadingModal').modal('show');
+        }
+        
+        function hideLoading() {
+            $('#loadingModal').modal('hide');
+        }
+        
+        // Auto-hide alerts after 5 seconds
+        setTimeout(function() {
+            $('.alert').fadeOut('slow');
+        }, 5000);
+        
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    </script>
+    
+    <!-- Loading Modal -->
+    <div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i><br>
+                    Loading...
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

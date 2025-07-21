@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::content})}">
+<head>
+    <title>Dashboard</title>
+</head>
+<body>
+    <div th:fragment="content">
+        <!-- Dashboard Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-xl-3 col-md-6">
+                <div class="stats-card">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h3 th:text="${stats.totalTrips ?: '0'}">0</h3>
+                            <p>Total Trips</p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-route fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6">
+                <div class="stats-card" style="background: linear-gradient(135deg, #27ae60, #2ecc71);">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h3 th:text="${stats.activeTrucks ?: '0'}">0</h3>
+                            <p>Active Trucks</p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-truck fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6">
+                <div class="stats-card" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h3 th:text="${stats.activeDrivers ?: '0'}">0</h3>
+                            <p>Active Drivers</p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-users fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6">
+                <div class="stats-card" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h3 th:text="${stats.totalClients ?: '0'}">0</h3>
+                            <p>Total Clients</p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-handshake fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Overview -->
+        <div class="row mb-4">
+            <div class="col-xl-4 col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-coins"></i> Monthly Revenue</h5>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="text-success" th:text="${'₹' + (financials.monthlyRevenue ?: '0.00')}">₹0.00</h3>
+                        <p class="text-muted mb-0">This Month</p>
+                        <small class="text-success">
+                            <i class="fas fa-arrow-up"></i> 
+                            <span th:text="${financials.revenueGrowth ?: '0'}">0</span>% from last month
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-4 col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-money-bill-wave"></i> Monthly Expenses</h5>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="text-danger" th:text="${'₹' + (financials.monthlyExpenses ?: '0.00')}">₹0.00</h3>
+                        <p class="text-muted mb-0">This Month</p>
+                        <small class="text-danger">
+                            <i class="fas fa-arrow-up"></i> 
+                            <span th:text="${financials.expenseGrowth ?: '0'}">0</span>% from last month
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-4 col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-chart-line"></i> Net Profit</h5>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="text-primary" th:text="${'₹' + (financials.netProfit ?: '0.00')}">₹0.00</h3>
+                        <p class="text-muted mb-0">This Month</p>
+                        <small class="text-primary">
+                            <i class="fas fa-arrow-up"></i> 
+                            <span th:text="${financials.profitMargin ?: '0'}">0</span>% margin
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions & Recent Activities -->
+        <div class="row">
+            <!-- Quick Actions -->
+            <div class="col-xl-4 col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a th:href="@{/trips/new}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create New Trip
+                            </a>
+                            <a th:href="@{/builties/new}" class="btn btn-success">
+                                <i class="fas fa-file-invoice"></i> Generate Builty
+                            </a>
+                            <a th:href="@{/expenses/new}" class="btn btn-warning">
+                                <i class="fas fa-money-bill-wave"></i> Add Expense
+                            </a>
+                            <a th:href="@{/maintenance/new}" class="btn btn-info">
+                                <i class="fas fa-tools"></i> Schedule Maintenance
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Running Trips -->
+            <div class="col-xl-8 col-lg-6">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-route"></i> Running Trips</h5>
+                        <a th:href="@{/trips?status=RUNNING}" class="btn btn-sm btn-outline-light">View All</a>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${runningTrips != null and !runningTrips.empty}">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Trip #</th>
+                                            <th>Route</th>
+                                            <th>Truck</th>
+                                            <th>Driver</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="trip : ${runningTrips}">
+                                            <td>
+                                                <a th:href="@{/trips/{id}(id=${trip.id})}" th:text="${trip.tripNumber}"></a>
+                                            </td>
+                                            <td th:text="${trip.sourceLocation + ' → ' + trip.destinationLocation}"></td>
+                                            <td th:text="${trip.truckNumber}"></td>
+                                            <td th:text="${trip.driverName}"></td>
+                                            <td>
+                                                <span class="badge status-running">Running</span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div th:if="${runningTrips == null or runningTrips.empty}" class="text-center text-muted py-3">
+                            <i class="fas fa-info-circle"></i> No running trips at the moment
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts & Notifications -->
+        <div class="row mt-4">
+            <!-- Overdue Payments -->
+            <div class="col-xl-6">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-exclamation-triangle text-warning"></i> Overdue Payments</h5>
+                        <a th:href="@{/builties?status=OVERDUE}" class="btn btn-sm btn-outline-light">View All</a>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${overduePayments != null and !overduePayments.empty}">
+                            <div class="list-group list-group-flush">
+                                <div class="list-group-item d-flex justify-content-between align-items-center" 
+                                     th:each="payment : ${overduePayments}">
+                                    <div>
+                                        <h6 class="mb-1" th:text="${payment.clientName}">Client Name</h6>
+                                        <p class="mb-1 text-muted" th:text="${'Builty: ' + payment.builtyNumber}">Builty Number</p>
+                                        <small class="text-danger" th:text="${'Due: ' + payment.dueDate}">Due Date</small>
+                                    </div>
+                                    <span class="badge bg-danger" th:text="${'₹' + payment.amount}">₹0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div th:if="${overduePayments == null or overduePayments.empty}" class="text-center text-muted py-3">
+                            <i class="fas fa-check-circle text-success"></i> No overdue payments
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upcoming Maintenance -->
+            <div class="col-xl-6">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-tools text-info"></i> Upcoming Maintenance</h5>
+                        <a th:href="@{/maintenance?status=SCHEDULED}" class="btn btn-sm btn-outline-light">View All</a>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${upcomingMaintenance != null and !upcomingMaintenance.empty}">
+                            <div class="list-group list-group-flush">
+                                <div class="list-group-item d-flex justify-content-between align-items-center" 
+                                     th:each="maintenance : ${upcomingMaintenance}">
+                                    <div>
+                                        <h6 class="mb-1" th:text="${maintenance.truckNumber}">Truck Number</h6>
+                                        <p class="mb-1 text-muted" th:text="${maintenance.maintenanceType}">Maintenance Type</p>
+                                        <small class="text-warning" th:text="${'Scheduled: ' + maintenance.scheduledDate}">Scheduled Date</small>
+                                    </div>
+                                    <span class="badge bg-warning" th:text="${maintenance.priority}">Priority</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div th:if="${upcomingMaintenance == null or upcomingMaintenance.empty}" class="text-center text-muted py-3">
+                            <i class="fas fa-check-circle text-success"></i> No upcoming maintenance
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-history"></i> Recent Activity</h5>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${recentActivity != null and !recentActivity.empty}">
+                            <div class="timeline">
+                                <div class="timeline-item" th:each="activity : ${recentActivity}">
+                                    <div class="timeline-marker" th:classappend="${activity.type}"></div>
+                                    <div class="timeline-content">
+                                        <h6 class="timeline-title" th:text="${activity.title}">Activity Title</h6>
+                                        <p class="timeline-description" th:text="${activity.description}">Activity Description</p>
+                                        <small class="text-muted" th:text="${activity.timestamp}">Timestamp</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div th:if="${recentActivity == null or recentActivity.empty}" class="text-center text-muted py-3">
+                            <i class="fas fa-info-circle"></i> No recent activity
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #dee2e6;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .timeline-marker {
+            position: absolute;
+            left: -22px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #6c757d;
+            border: 2px solid #fff;
+        }
+        
+        .timeline-marker.success { background: #28a745; }
+        .timeline-marker.warning { background: #ffc107; }
+        .timeline-marker.danger { background: #dc3545; }
+        .timeline-marker.info { background: #17a2b8; }
+        
+        .timeline-content {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid #dee2e6;
+        }
+        
+        .timeline-title {
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .timeline-description {
+            margin-bottom: 5px;
+            color: #6c757d;
+        }
+    </style>
+</body>
+</html>
+

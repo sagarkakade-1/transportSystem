@@ -1,375 +1,241 @@
 package com.shivshakti.stms.entity;
 
 import javax.persistence.*;
-import javax.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDateTime;
 
 /**
- * Builty Entity - Represents billing/invoice documents in the transport system
- * Manages builty information, charges, and payment tracking
+ * Builty entity representing transport billing documents
  * 
  * @author STMS Development Team
  * @version 1.0.0
  */
 @Entity
-@Table(name = "builty", indexes = {
-    @Index(name = "idx_builty_number", columnList = "builty_number"),
-    @Index(name = "idx_builty_trip", columnList = "trip_id"),
-    @Index(name = "idx_builty_client", columnList = "client_id"),
-    @Index(name = "idx_builty_date", columnList = "builty_date"),
-    @Index(name = "idx_builty_payment_status", columnList = "payment_status")
-})
-public class Builty extends BaseEntity {
-
-    public enum PaymentStatus {
-        PENDING("Pending"),
-        PARTIAL("Partial"),
-        PAID("Paid");
-
-        private final String displayName;
-
-        PaymentStatus(String displayName) {
-            this.displayName = displayName;
-        }
-
-        public String getDisplayName() {
-            return displayName;
-        }
-    }
-
-    @NotBlank(message = "Builty number is required")
-    @Size(max = 50, message = "Builty number must not exceed 50 characters")
-    @Column(name = "builty_number", nullable = false, unique = true, length = 50)
+@Table(name = "builties")
+public class Builty {
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @Column(name = "builty_number", unique = true, nullable = false, length = 20)
     private String builtyNumber;
-
-    @NotNull(message = "Trip is required")
+    
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "trip_id", nullable = false, foreignKey = @ForeignKey(name = "fk_builty_trip"))
+    @JoinColumn(name = "trip_id", nullable = false)
     private Trip trip;
-
-    @NotNull(message = "Client is required")
+    
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "client_id", nullable = false, foreignKey = @ForeignKey(name = "fk_builty_client"))
+    @JoinColumn(name = "client_id", nullable = false)
     private Client client;
-
-    @NotNull(message = "Builty date is required")
-    @Column(name = "builty_date", nullable = false)
-    private LocalDate builtyDate;
-
-    @NotBlank(message = "Goods type is required")
-    @Size(max = 100, message = "Goods type must not exceed 100 characters")
-    @Column(name = "goods_type", nullable = false, length = 100)
-    private String goodsType;
-
-    @NotNull(message = "Weight is required")
-    @DecimalMin(value = "0.1", message = "Weight must be greater than 0")
-    @Digits(integer = 6, fraction = 2, message = "Weight must have at most 6 integer digits and 2 decimal places")
-    @Column(name = "weight_tons", nullable = false, precision = 8, scale = 2)
-    private BigDecimal weightTons;
-
-    @DecimalMin(value = "0.0", message = "Rate per ton must be non-negative")
-    @Digits(integer = 6, fraction = 2, message = "Rate per ton must have at most 6 integer digits and 2 decimal places")
-    @Column(name = "rate_per_ton", precision = 8, scale = 2)
-    private BigDecimal ratePerTon;
-
-    @NotNull(message = "Total charges is required")
-    @DecimalMin(value = "0.01", message = "Total charges must be greater than 0")
-    @Digits(integer = 10, fraction = 2, message = "Total charges must have at most 10 integer digits and 2 decimal places")
-    @Column(name = "total_charges", nullable = false, precision = 12, scale = 2)
-    private BigDecimal totalCharges;
-
-    @DecimalMin(value = "0.0", message = "Advance received must be non-negative")
-    @Digits(integer = 10, fraction = 2, message = "Advance received must have at most 10 integer digits and 2 decimal places")
-    @Column(name = "advance_received", precision = 12, scale = 2)
-    private BigDecimal advanceReceived = BigDecimal.ZERO;
-
-    @NotNull(message = "Balance amount is required")
-    @DecimalMin(value = "0.0", message = "Balance amount must be non-negative")
-    @Digits(integer = 10, fraction = 2, message = "Balance amount must have at most 10 integer digits and 2 decimal places")
-    @Column(name = "balance_amount", nullable = false, precision = 12, scale = 2)
-    private BigDecimal balanceAmount;
-
-    @DecimalMin(value = "0.0", message = "Loading charges must be non-negative")
-    @Digits(integer = 6, fraction = 2, message = "Loading charges must have at most 6 integer digits and 2 decimal places")
+    
+    @Column(name = "consignor_name", nullable = false, length = 100)
+    private String consignorName;
+    
+    @Column(name = "consignor_address", nullable = false, length = 200)
+    private String consignorAddress;
+    
+    @Column(name = "consignor_phone", length = 15)
+    private String consignorPhone;
+    
+    @Column(name = "consignee_name", nullable = false, length = 100)
+    private String consigneeName;
+    
+    @Column(name = "consignee_address", nullable = false, length = 200)
+    private String consigneeAddress;
+    
+    @Column(name = "consignee_phone", length = 15)
+    private String consigneePhone;
+    
+    @Column(name = "goods_description", nullable = false, length = 200)
+    private String goodsDescription;
+    
+    @Column(name = "goods_weight", precision = 8, scale = 2, nullable = false)
+    private BigDecimal goodsWeight;
+    
+    @Column(name = "goods_value", precision = 12, scale = 2)
+    private BigDecimal goodsValue;
+    
+    @Column(name = "number_of_packages", nullable = false)
+    private Integer numberOfPackages;
+    
+    @Column(name = "package_type", length = 50)
+    private String packageType;
+    
+    @Column(name = "freight_charges", precision = 10, scale = 2, nullable = false)
+    private BigDecimal freightCharges;
+    
     @Column(name = "loading_charges", precision = 8, scale = 2)
     private BigDecimal loadingCharges = BigDecimal.ZERO;
-
-    @DecimalMin(value = "0.0", message = "Unloading charges must be non-negative")
-    @Digits(integer = 6, fraction = 2, message = "Unloading charges must have at most 6 integer digits and 2 decimal places")
+    
     @Column(name = "unloading_charges", precision = 8, scale = 2)
     private BigDecimal unloadingCharges = BigDecimal.ZERO;
-
-    @DecimalMin(value = "0.0", message = "Detention charges must be non-negative")
-    @Digits(integer = 6, fraction = 2, message = "Detention charges must have at most 6 integer digits and 2 decimal places")
-    @Column(name = "detention_charges", precision = 8, scale = 2)
-    private BigDecimal detentionCharges = BigDecimal.ZERO;
-
-    @DecimalMin(value = "0.0", message = "Other charges must be non-negative")
-    @Digits(integer = 6, fraction = 2, message = "Other charges must have at most 6 integer digits and 2 decimal places")
+    
     @Column(name = "other_charges", precision = 8, scale = 2)
     private BigDecimal otherCharges = BigDecimal.ZERO;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "payment_status", length = 20)
-    private PaymentStatus paymentStatus = PaymentStatus.PENDING;
-
-    @Size(max = 1000, message = "Remarks must not exceed 1000 characters")
-    @Column(name = "remarks", columnDefinition = "TEXT")
+    
+    @Column(name = "gst_amount", precision = 8, scale = 2)
+    private BigDecimal gstAmount = BigDecimal.ZERO;
+    
+    @Column(name = "advance_amount", precision = 10, scale = 2)
+    private BigDecimal advanceAmount = BigDecimal.ZERO;
+    
+    @Column(name = "payment_status", nullable = false, length = 20)
+    private String paymentStatus = "PENDING";
+    
+    @Column(name = "delivery_status", nullable = false, length = 20)
+    private String deliveryStatus = "PENDING";
+    
+    @Column(name = "builty_date", nullable = false)
+    private LocalDate builtyDate;
+    
+    @Column(name = "delivery_date")
+    private LocalDate deliveryDate;
+    
+    @Column(name = "payment_due_date")
+    private LocalDate paymentDueDate;
+    
+    @Column(name = "remarks", length = 500)
     private String remarks;
-
-    // Relationships
-    @OneToMany(mappedBy = "builty", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Income> incomes = new ArrayList<>();
-
-    @OneToMany(mappedBy = "builty", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Payment> payments = new ArrayList<>();
-
+    
+    @Column(name = "special_instructions", length = 500)
+    private String specialInstructions;
+    
+    @Column(name = "created_date", nullable = false)
+    private LocalDateTime createdDate;
+    
+    @Column(name = "modified_date")
+    private LocalDateTime modifiedDate;
+    
     // Constructors
     public Builty() {
+        this.createdDate = LocalDateTime.now();
+        this.builtyDate = LocalDate.now();
     }
-
-    public Builty(String builtyNumber, Trip trip, Client client, LocalDate builtyDate, 
-                  String goodsType, BigDecimal weightTons, BigDecimal totalCharges) {
+    
+    public Builty(String builtyNumber, Trip trip, Client client, String consignorName, 
+                  String consigneeName, String goodsDescription, BigDecimal goodsWeight, 
+                  BigDecimal freightCharges) {
+        this();
         this.builtyNumber = builtyNumber;
         this.trip = trip;
         this.client = client;
-        this.builtyDate = builtyDate;
-        this.goodsType = goodsType;
-        this.weightTons = weightTons;
-        this.totalCharges = totalCharges;
-        this.balanceAmount = totalCharges;
+        this.consignorName = consignorName;
+        this.consigneeName = consigneeName;
+        this.goodsDescription = goodsDescription;
+        this.goodsWeight = goodsWeight;
+        this.freightCharges = freightCharges;
     }
-
-    // Business Methods
-    public boolean isPending() {
-        return PaymentStatus.PENDING.equals(paymentStatus);
-    }
-
-    public boolean isPartiallyPaid() {
-        return PaymentStatus.PARTIAL.equals(paymentStatus);
-    }
-
-    public boolean isFullyPaid() {
-        return PaymentStatus.PAID.equals(paymentStatus);
-    }
-
-    public void calculateBalanceAmount() {
-        if (totalCharges != null && advanceReceived != null) {
-            this.balanceAmount = totalCharges.subtract(advanceReceived);
-            updatePaymentStatus();
-        }
-    }
-
-    public void updatePaymentStatus() {
-        if (balanceAmount == null || balanceAmount.compareTo(BigDecimal.ZERO) <= 0) {
-            this.paymentStatus = PaymentStatus.PAID;
-        } else if (advanceReceived != null && advanceReceived.compareTo(BigDecimal.ZERO) > 0) {
-            this.paymentStatus = PaymentStatus.PARTIAL;
-        } else {
-            this.paymentStatus = PaymentStatus.PENDING;
-        }
-    }
-
-    public BigDecimal getTotalAdditionalCharges() {
-        BigDecimal total = BigDecimal.ZERO;
-        if (loadingCharges != null) total = total.add(loadingCharges);
-        if (unloadingCharges != null) total = total.add(unloadingCharges);
-        if (detentionCharges != null) total = total.add(detentionCharges);
-        if (otherCharges != null) total = total.add(otherCharges);
-        return total;
-    }
-
-    public BigDecimal getGrandTotal() {
-        return totalCharges.add(getTotalAdditionalCharges());
-    }
-
-    public void receivePayment(BigDecimal amount) {
-        if (amount != null && amount.compareTo(BigDecimal.ZERO) > 0) {
-            this.advanceReceived = this.advanceReceived.add(amount);
-            calculateBalanceAmount();
-        }
-    }
-
-    public void addIncome(Income income) {
-        incomes.add(income);
-        income.setBuilty(this);
-    }
-
-    public void removeIncome(Income income) {
-        incomes.remove(income);
-        income.setBuilty(null);
-    }
-
-    public void addPayment(Payment payment) {
-        payments.add(payment);
-        payment.setBuilty(this);
-    }
-
-    public void removePayment(Payment payment) {
-        payments.remove(payment);
-        payment.setBuilty(null);
-    }
-
+    
     // Getters and Setters
-    public String getBuiltyNumber() {
-        return builtyNumber;
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    
+    public String getBuiltyNumber() { return builtyNumber; }
+    public void setBuiltyNumber(String builtyNumber) { this.builtyNumber = builtyNumber; }
+    
+    public Trip getTrip() { return trip; }
+    public void setTrip(Trip trip) { this.trip = trip; }
+    
+    public Client getClient() { return client; }
+    public void setClient(Client client) { this.client = client; }
+    
+    public String getConsignorName() { return consignorName; }
+    public void setConsignorName(String consignorName) { this.consignorName = consignorName; }
+    
+    public String getConsignorAddress() { return consignorAddress; }
+    public void setConsignorAddress(String consignorAddress) { this.consignorAddress = consignorAddress; }
+    
+    public String getConsignorPhone() { return consignorPhone; }
+    public void setConsignorPhone(String consignorPhone) { this.consignorPhone = consignorPhone; }
+    
+    public String getConsigneeName() { return consigneeName; }
+    public void setConsigneeName(String consigneeName) { this.consigneeName = consigneeName; }
+    
+    public String getConsigneeAddress() { return consigneeAddress; }
+    public void setConsigneeAddress(String consigneeAddress) { this.consigneeAddress = consigneeAddress; }
+    
+    public String getConsigneePhone() { return consigneePhone; }
+    public void setConsigneePhone(String consigneePhone) { this.consigneePhone = consigneePhone; }
+    
+    public String getGoodsDescription() { return goodsDescription; }
+    public void setGoodsDescription(String goodsDescription) { this.goodsDescription = goodsDescription; }
+    
+    public BigDecimal getGoodsWeight() { return goodsWeight; }
+    public void setGoodsWeight(BigDecimal goodsWeight) { this.goodsWeight = goodsWeight; }
+    
+    public BigDecimal getGoodsValue() { return goodsValue; }
+    public void setGoodsValue(BigDecimal goodsValue) { this.goodsValue = goodsValue; }
+    
+    public Integer getNumberOfPackages() { return numberOfPackages; }
+    public void setNumberOfPackages(Integer numberOfPackages) { this.numberOfPackages = numberOfPackages; }
+    
+    public String getPackageType() { return packageType; }
+    public void setPackageType(String packageType) { this.packageType = packageType; }
+    
+    public BigDecimal getFreightCharges() { return freightCharges; }
+    public void setFreightCharges(BigDecimal freightCharges) { this.freightCharges = freightCharges; }
+    
+    public BigDecimal getLoadingCharges() { return loadingCharges; }
+    public void setLoadingCharges(BigDecimal loadingCharges) { this.loadingCharges = loadingCharges; }
+    
+    public BigDecimal getUnloadingCharges() { return unloadingCharges; }
+    public void setUnloadingCharges(BigDecimal unloadingCharges) { this.unloadingCharges = unloadingCharges; }
+    
+    public BigDecimal getOtherCharges() { return otherCharges; }
+    public void setOtherCharges(BigDecimal otherCharges) { this.otherCharges = otherCharges; }
+    
+    public BigDecimal getGstAmount() { return gstAmount; }
+    public void setGstAmount(BigDecimal gstAmount) { this.gstAmount = gstAmount; }
+    
+    public BigDecimal getAdvanceAmount() { return advanceAmount; }
+    public void setAdvanceAmount(BigDecimal advanceAmount) { this.advanceAmount = advanceAmount; }
+    
+    public String getPaymentStatus() { return paymentStatus; }
+    public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
+    
+    public String getDeliveryStatus() { return deliveryStatus; }
+    public void setDeliveryStatus(String deliveryStatus) { this.deliveryStatus = deliveryStatus; }
+    
+    public LocalDate getBuiltyDate() { return builtyDate; }
+    public void setBuiltyDate(LocalDate builtyDate) { this.builtyDate = builtyDate; }
+    
+    public LocalDate getDeliveryDate() { return deliveryDate; }
+    public void setDeliveryDate(LocalDate deliveryDate) { this.deliveryDate = deliveryDate; }
+    
+    public LocalDate getPaymentDueDate() { return paymentDueDate; }
+    public void setPaymentDueDate(LocalDate paymentDueDate) { this.paymentDueDate = paymentDueDate; }
+    
+    public String getRemarks() { return remarks; }
+    public void setRemarks(String remarks) { this.remarks = remarks; }
+    
+    public String getSpecialInstructions() { return specialInstructions; }
+    public void setSpecialInstructions(String specialInstructions) { this.specialInstructions = specialInstructions; }
+    
+    public LocalDateTime getCreatedDate() { return createdDate; }
+    public void setCreatedDate(LocalDateTime createdDate) { this.createdDate = createdDate; }
+    
+    public LocalDateTime getModifiedDate() { return modifiedDate; }
+    public void setModifiedDate(LocalDateTime modifiedDate) { this.modifiedDate = modifiedDate; }
+    
+    // Lifecycle callbacks
+    @PreUpdate
+    public void preUpdate() {
+        this.modifiedDate = LocalDateTime.now();
     }
-
-    public void setBuiltyNumber(String builtyNumber) {
-        this.builtyNumber = builtyNumber;
-    }
-
-    public Trip getTrip() {
-        return trip;
-    }
-
-    public void setTrip(Trip trip) {
-        this.trip = trip;
-    }
-
-    public Client getClient() {
-        return client;
-    }
-
-    public void setClient(Client client) {
-        this.client = client;
-    }
-
-    public LocalDate getBuiltyDate() {
-        return builtyDate;
-    }
-
-    public void setBuiltyDate(LocalDate builtyDate) {
-        this.builtyDate = builtyDate;
-    }
-
-    public String getGoodsType() {
-        return goodsType;
-    }
-
-    public void setGoodsType(String goodsType) {
-        this.goodsType = goodsType;
-    }
-
-    public BigDecimal getWeightTons() {
-        return weightTons;
-    }
-
-    public void setWeightTons(BigDecimal weightTons) {
-        this.weightTons = weightTons;
-    }
-
-    public BigDecimal getRatePerTon() {
-        return ratePerTon;
-    }
-
-    public void setRatePerTon(BigDecimal ratePerTon) {
-        this.ratePerTon = ratePerTon;
-    }
-
-    public BigDecimal getTotalCharges() {
-        return totalCharges;
-    }
-
-    public void setTotalCharges(BigDecimal totalCharges) {
-        this.totalCharges = totalCharges;
-        calculateBalanceAmount();
-    }
-
-    public BigDecimal getAdvanceReceived() {
-        return advanceReceived;
-    }
-
-    public void setAdvanceReceived(BigDecimal advanceReceived) {
-        this.advanceReceived = advanceReceived;
-        calculateBalanceAmount();
-    }
-
-    public BigDecimal getBalanceAmount() {
-        return balanceAmount;
-    }
-
-    public void setBalanceAmount(BigDecimal balanceAmount) {
-        this.balanceAmount = balanceAmount;
-    }
-
-    public BigDecimal getLoadingCharges() {
-        return loadingCharges;
-    }
-
-    public void setLoadingCharges(BigDecimal loadingCharges) {
-        this.loadingCharges = loadingCharges;
-    }
-
-    public BigDecimal getUnloadingCharges() {
-        return unloadingCharges;
-    }
-
-    public void setUnloadingCharges(BigDecimal unloadingCharges) {
-        this.unloadingCharges = unloadingCharges;
-    }
-
-    public BigDecimal getDetentionCharges() {
-        return detentionCharges;
-    }
-
-    public void setDetentionCharges(BigDecimal detentionCharges) {
-        this.detentionCharges = detentionCharges;
-    }
-
-    public BigDecimal getOtherCharges() {
-        return otherCharges;
-    }
-
-    public void setOtherCharges(BigDecimal otherCharges) {
-        this.otherCharges = otherCharges;
-    }
-
-    public PaymentStatus getPaymentStatus() {
-        return paymentStatus;
-    }
-
-    public void setPaymentStatus(PaymentStatus paymentStatus) {
-        this.paymentStatus = paymentStatus;
-    }
-
-    public String getRemarks() {
-        return remarks;
-    }
-
-    public void setRemarks(String remarks) {
-        this.remarks = remarks;
-    }
-
-    public List<Income> getIncomes() {
-        return incomes;
-    }
-
-    public void setIncomes(List<Income> incomes) {
-        this.incomes = incomes;
-    }
-
-    public List<Payment> getPayments() {
-        return payments;
-    }
-
-    public void setPayments(List<Payment> payments) {
-        this.payments = payments;
-    }
-
+    
     @Override
     public String toString() {
         return "Builty{" +
-                "id=" + getId() +
+                "id=" + id +
                 ", builtyNumber='" + builtyNumber + '\'' +
-                ", goodsType='" + goodsType + '\'' +
-                ", weightTons=" + weightTons +
-                ", totalCharges=" + totalCharges +
-                ", balanceAmount=" + balanceAmount +
-                ", paymentStatus=" + paymentStatus +
+                ", consignorName='" + consignorName + '\'' +
+                ", consigneeName='" + consigneeName + '\'' +
+                ", goodsDescription='" + goodsDescription + '\'' +
+                ", freightCharges=" + freightCharges +
+                ", paymentStatus='" + paymentStatus + '\'' +
+                ", deliveryStatus='" + deliveryStatus + '\'' +
                 '}';
     }
 }

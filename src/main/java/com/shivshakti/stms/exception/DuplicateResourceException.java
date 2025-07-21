@@ -6,18 +6,36 @@ package com.shivshakti.stms.exception;
  * @author STMS Development Team
  * @version 1.0.0
  */
-public class DuplicateResourceException extends STMSException {
+public class DuplicateResourceException extends RuntimeException {
+    
+    private final String resourceName;
+    private final String fieldName;
+    private final Object fieldValue;
+    
+    public DuplicateResourceException(String resourceName, String fieldName, Object fieldValue) {
+        super(String.format("%s already exists with %s: '%s'", resourceName, fieldName, fieldValue));
+        this.resourceName = resourceName;
+        this.fieldName = fieldName;
+        this.fieldValue = fieldValue;
+    }
     
     public DuplicateResourceException(String message) {
-        super("DUPLICATE_RESOURCE", message);
+        super(message);
+        this.resourceName = null;
+        this.fieldName = null;
+        this.fieldValue = null;
     }
     
-    public DuplicateResourceException(String resourceType, String field, Object value) {
-        super("DUPLICATE_RESOURCE", 
-              String.format("%s with %s '%s' already exists", resourceType, field, value));
+    public String getResourceName() {
+        return resourceName;
     }
     
-    public DuplicateResourceException(String message, Throwable cause) {
-        super("DUPLICATE_RESOURCE", message, cause);
+    public String getFieldName() {
+        return fieldName;
+    }
+    
+    public Object getFieldValue() {
+        return fieldValue;
     }
 }
+

@@ -6,19 +6,43 @@ package com.shivshakti.stms.exception;
  * @author STMS Development Team
  * @version 1.0.0
  */
-public class ResourceNotFoundException extends STMSException {
+public class ResourceNotFoundException extends RuntimeException {
+    
+    private final String resourceName;
+    private final String fieldName;
+    private final Object fieldValue;
+    
+    public ResourceNotFoundException(String resourceName, String fieldName, Object fieldValue) {
+        super(String.format("%s not found with %s: '%s'", resourceName, fieldName, fieldValue));
+        this.resourceName = resourceName;
+        this.fieldName = fieldName;
+        this.fieldValue = fieldValue;
+    }
+    
+    public ResourceNotFoundException(String resourceName, Long id) {
+        super(String.format("%s not found with id: %d", resourceName, id));
+        this.resourceName = resourceName;
+        this.fieldName = "id";
+        this.fieldValue = id;
+    }
     
     public ResourceNotFoundException(String message) {
-        super("RESOURCE_NOT_FOUND", message);
+        super(message);
+        this.resourceName = null;
+        this.fieldName = null;
+        this.fieldValue = null;
     }
     
-    public ResourceNotFoundException(String resourceType, Object id) {
-        super("RESOURCE_NOT_FOUND", 
-              String.format("%s with id '%s' not found", resourceType, id));
+    public String getResourceName() {
+        return resourceName;
     }
     
-    public ResourceNotFoundException(String resourceType, String field, Object value) {
-        super("RESOURCE_NOT_FOUND", 
-              String.format("%s with %s '%s' not found", resourceType, field, value));
+    public String getFieldName() {
+        return fieldName;
+    }
+    
+    public Object getFieldValue() {
+        return fieldValue;
     }
 }
+
